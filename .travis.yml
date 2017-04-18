@@ -1,6 +1,7 @@
 language: rust
 rust:
   - nightly
+cache: cargo
 before_script:
   - eval "$(gimme 1.8)"
   - cargo build --release --verbose
