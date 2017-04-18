@@ -27,6 +27,8 @@ func must(err error) {
 }
 
 func getHash(hashURL *url.URL, password, key, ad string) []byte {
+	start := time.Now()
+
 	req, err := http.NewRequest(http.MethodPost, hashURL.String(), strings.NewReader(password))
 	must(err)
 	req.Header.Set("Content-Type", "application/octet-stream")
@@ -58,10 +60,13 @@ func getHash(hashURL *url.URL, password, key, ad string) []byte {
 
 	fmt.Println(hex.Dump(hash))
 
+	fmt.Printf("################ %s\n", time.Since(start))
 	return hash
 }
 
 func verify(verifyURL *url.URL, hash []byte, password, key, ad string) bool {
+	start := time.Now()
+
 	req, err := http.NewRequest(http.MethodPost, verifyURL.String(), io.MultiReader(bytes.NewReader(hash), strings.NewReader(password)))
 	must(err)
 	req.ContentLength = int64(len(hash) + len(password))
@@ -101,6 +106,7 @@ func verify(verifyURL *url.URL, hash []byte, password, key, ad string) bool {
 		panic("invalid X-Rehash header")
 	}
 
+	fmt.Printf("################ %s\n", time.Since(start))
 	return resp.StatusCode == http.StatusOK
 }
 
