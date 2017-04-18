@@ -26,6 +26,41 @@ func must(err error) {
 	}
 }
 
+func getHash(hashURL *url.URL, password, key, ad string) []byte {
+	req, err := http.NewRequest(http.MethodPost, hashURL.String(), strings.NewReader(password))
+	must(err)
+	req.Header.Set("Content-Type", "application/octet-stream")
+	req.Header.Set("X-Key", key)
+	req.Header.Set("X-Associated-Data", ad)
+
+	b, err := httputil.DumpRequestOut(req, true)
+	must(err)
+
+	fmt.Println("================")
+	fmt.Printf("%s\n\n", b)
+
+	resp, err := http.DefaultClient.Do(req)
+	must(err)
+
+	b, err = httputil.DumpResponse(resp, false)
+	must(err)
+
+	fmt.Println("----------------")
+	fmt.Printf("%s\n", b)
+
+	if resp.StatusCode != http.StatusOK {
+		log.Fatalf("status code: %d", resp.StatusCode)
+	}
+
+	hash, err := ioutil.ReadAll(resp.Body)
+	must(err)
+	resp.Body.Close()
+
+	fmt.Println(hex.Dump(hash))
+
+	return hash
+}
+
 func verify(verifyURL *url.URL, hash []byte, password, key, ad string) bool {
 	req, err := http.NewRequest(http.MethodPost, verifyURL.String(), io.MultiReader(bytes.NewReader(hash), strings.NewReader(password)))
 	must(err)
@@ -84,36 +119,7 @@ func main() {
 
 	time.Sleep(2 * time.Second)
 
-	req, err := http.NewRequest(http.MethodPost, hashURL.String(), strings.NewReader("password🔐🔓"))
-	must(err)
-	req.Header.Set("Content-Type", "application/octet-stream")
-	req.Header.Set("X-Key", "🔑")
-	req.Header.Set("X-Associated-Data", "📋")
-
-	b, err := httputil.DumpRequestOut(req, true)
-	must(err)
-
-	fmt.Println("================")
-	fmt.Printf("%s\n\n", b)
-
-	resp, err := http.DefaultClient.Do(req)
-	must(err)
-
-	b, err = httputil.DumpResponse(resp, false)
-	must(err)
-
-	fmt.Println("----------------")
-	fmt.Printf("%s\n", b)
-
-	if resp.StatusCode != http.StatusOK {
-		log.Fatalf("status code: %d", resp.StatusCode)
-	}
-
-	hash, err := ioutil.ReadAll(resp.Body)
-	must(err)
-	resp.Body.Close()
-
-	fmt.Println(hex.Dump(hash))
+	hash := getHash(&hashURL, "password🔐🔓", "🔑", "📋")
 
 	if !verify(&verifyURL, hash, "password🔐🔓", "🔑", "📋") {
 		panic("failed")
@@ -131,16 +137,16 @@ func main() {
 		MaxCount: *count,
 
 		Values: func(values []reflect.Value, rand *rand.Rand) {
-			v, ok := quick.Value(reflect.TypeOf(""), rand)
+			key, ok := quick.Value(reflect.TypeOf(""), rand)
 			if !ok {
 				panic("quick.Value failed")
 			}
 
-			if v.Len() > 32 {
-				v = v.Slice(0, 32)
+			if key.Len() > 32 {
+				key = key.Slice(0, 32)
 			}
 
-			values[0] = v
+			values[0] = key
 		},
 	}))
 
@@ -148,5 +154,26 @@ func main() {
 		return !verify(&verifyURL, hash, "password🔐🔓", "🔑", ad)
 	}, &quick.Config{
 		MaxCount: *count,
+	}))
+
+	must(quick.Check(func(password, key, ad string) bool {
+		hash := getHash(&hashURL, password, key, ad)
+		return verify(&verifyURL, hash, password, key, ad)
+	}, &quick.Config{
+		MaxCount: *count,
+
+		Values: func(values []reflect.Value, rand *rand.Rand) {
+			for i := range values {
+				var ok bool
+				values[i], ok = quick.Value(reflect.TypeOf(""), rand)
+				if !ok {
+					panic("quick.Value failed")
+				}
+			}
+
+			if values[1].Len() > 32 {
+				values[1] = values[1].Slice(0, 32)
+			}
+		},
 	}))
 }
