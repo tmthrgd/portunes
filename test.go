@@ -84,7 +84,7 @@ func main() {
 
 	time.Sleep(2 * time.Second)
 
-	req, err := http.NewRequest(http.MethodPost, hashURL.String(), strings.NewReader("password"))
+	req, err := http.NewRequest(http.MethodPost, hashURL.String(), strings.NewReader("password🔐🔓"))
 	must(err)
 	req.Header.Set("Content-Type", "application/octet-stream")
 	req.Header.Set("X-Key", "🔑")
@@ -115,7 +115,7 @@ func main() {
 
 	fmt.Println(hex.Dump(hash))
 
-	if !verify(&verifyURL, hash, "password", "🔑", "📋") {
+	if !verify(&verifyURL, hash, "password🔐🔓", "🔑", "📋") {
 		panic("failed")
 	}
 
@@ -126,7 +126,7 @@ func main() {
 	}))
 
 	must(quick.Check(func(key string) bool {
-		return !verify(&verifyURL, hash, "password", key, "📋")
+		return !verify(&verifyURL, hash, "password🔐🔓", key, "📋")
 	}, &quick.Config{
 		MaxCount: *count,
 
@@ -145,7 +145,7 @@ func main() {
 	}))
 
 	must(quick.Check(func(ad string) bool {
-		return !verify(&verifyURL, hash, "password", "🔑", ad)
+		return !verify(&verifyURL, hash, "password🔐🔓", "🔑", ad)
 	}, &quick.Config{
 		MaxCount: *count,
 	}))
