@@ -185,7 +185,7 @@ func main() {
 	}))
 
 	password := "password🔐🔓"
-	for len(password) < 1024 {
+	for len(password) < 2048 {
 		password += password
 	}
 
