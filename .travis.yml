@@ -2,8 +2,9 @@ language: rust
 rust:
   - nightly
 before_script:
-  - eval "$(gimme stable)"
+  - eval "$(gimme 1.8)"
   - cargo build --release --verbose
 script:
+  - go version
   - ./target/release/portunes &
   - go run test.go -count 5
