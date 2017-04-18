@@ -64,6 +64,7 @@ func getHash(hashURL *url.URL, password, key, ad string) []byte {
 func verify(verifyURL *url.URL, hash []byte, password, key, ad string) bool {
 	req, err := http.NewRequest(http.MethodPost, verifyURL.String(), io.MultiReader(bytes.NewReader(hash), strings.NewReader(password)))
 	must(err)
+	req.ContentLength = len(hash) + len(password)
 	req.Header.Set("Content-Type", "application/octet-stream")
 	req.Header.Set("X-Key", key)
 	req.Header.Set("X-Associated-Data", ad)
