@@ -177,4 +177,14 @@ func main() {
 			}
 		},
 	}))
+
+	password := "password🔐🔓"
+	for len(password) < 1024 {
+		password += password
+	}
+
+	hash = getHash(&hashURL, password, "🔑", "📋")
+	if !verify(&verifyURL, hash, password, "🔑", "📋") {
+		panic("failed with long password")
+	}
 }
