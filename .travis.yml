@@ -8,4 +8,4 @@ before_script:
 script:
   - go version
   - ./target/release/portunes &
-  - go run test.go -count 5
+  - go run test.go -count 10

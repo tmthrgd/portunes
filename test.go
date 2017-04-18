@@ -112,7 +112,7 @@ func verify(verifyURL *url.URL, hash []byte, password, key, ad string) bool {
 
 func main() {
 	addr := flag.String("addr", "http://127.0.0.1:8080", "")
-	count := flag.Int("count", 2, "")
+	count := flag.Int("count", 1, "")
 	flag.Parse()
 
 	uri, err := url.Parse(*addr)
