@@ -1,0 +1,16 @@
+[package]
+name = "portunes"
+version = "0.1.0"
+authors = ["Tom Thorogood <me@tomthorogood.co.uk>"]
+publish = false
+
+[dependencies]
+hyper = "0.10"
+rand = "0.3"
+byteorder = "1.0"
+num_cpus = "1.0"
+
+[dependencies.argon2rs]
+git = "https://github.com/bryant/argon2rs.git"
+rev = "42df9d8c3a0fbd3f63f4aeeaa3333b0a4b728681"
+features = ["simd"]
