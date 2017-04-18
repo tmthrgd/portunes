@@ -1,0 +1,8 @@
+language: rust
+rust:
+  - nightly
+after_install: eval "$(gimme stable)"
+before_script: cargo build --release --verbose
+script:
+  - ./target/release/portunes &
+  - go run test.go -count 5
