@@ -84,11 +84,7 @@ impl Hasher {
 				return Hasher::error_msg(res, StatusCode::InternalServerError, err);
 			};
 
-			self.argon_cur.hash(&mut hash,
-			                    data.as_ref(),
-			                    &salt,
-			                    key.as_bytes(),
-			                    ad.as_bytes());
+			self.argon_cur.hash(&mut hash, &data, &salt, key.as_bytes(), ad.as_bytes());
 
 			// TODO: zero data
 		};
@@ -134,13 +130,13 @@ impl Hasher {
 
 		let mut salt = Vec::with_capacity(salt_len);
 		salt.resize(salt_len, 0);
-		if let Err(err) = req.read_exact(salt.as_mut()) {
+		if let Err(err) = req.read_exact(&mut salt) {
 			return Hasher::error_msg(res, StatusCode::BadRequest, err);
 		};
 
 		let mut hash = Vec::with_capacity(hash_len);
 		hash.resize(hash_len, 0);
-		if let Err(err) = req.read_exact(hash.as_mut()) {
+		if let Err(err) = req.read_exact(&mut hash) {
 			return Hasher::error_msg(res, StatusCode::BadRequest, err);
 		};
 
@@ -170,11 +166,7 @@ impl Hasher {
 
 			let mut expect = Vec::with_capacity(hash_len);
 			expect.resize(hash_len, 0);
-			argon.hash(expect.as_mut(),
-			           data.as_ref(),
-			           &salt,
-			           key.as_bytes(),
-			           ad.as_bytes());
+			argon.hash(&mut expect, &data, &salt, key.as_bytes(), ad.as_bytes());
 
 			// TODO: zero data
 
