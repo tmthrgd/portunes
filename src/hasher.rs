@@ -88,7 +88,9 @@ impl Hasher {
 
 			self.argon_cur.hash(&mut hash, &data, &salt, key.as_bytes(), ad.as_bytes());
 
-			unsafe { memzero(&mut data[0], data.len()) };
+			if data.len() > 0 {
+				unsafe { memzero(&mut data[0], data.len()) };
+			};
 		};
 
 		let hdr = [0 as u8; 2];
@@ -170,7 +172,9 @@ impl Hasher {
 			expect.resize(hash_len, 0);
 			argon.hash(&mut expect, &data, &salt, key.as_bytes(), ad.as_bytes());
 
-			unsafe { memzero(&mut data[0], data.len()) };
+			if data.len() > 0 {
+				unsafe { memzero(&mut data[0], data.len()) };
+			};
 
 			constant_eq(&expect, &hash)
 		};
