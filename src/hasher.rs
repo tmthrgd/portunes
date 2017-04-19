@@ -48,10 +48,10 @@ impl Hasher {
 			return Hasher::error(res, StatusCode::MethodNotAllowed);
 		};
 
-		let data_len = req.headers
-			.get::<header::ContentLength>()
-			.unwrap_or(&header::ContentLength(0))
-			.0 as usize;
+		let data_len = match req.headers.get::<header::ContentLength>() {
+			Some(len) => len.0 as usize,
+			None => 0,
+		};
 
 		let mut salt = [0 as u8; params::cur::SALT_LEN];
 		match OsRng::new() {
