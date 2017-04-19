@@ -10,13 +10,14 @@ mod params;
 mod hasher;
 mod memset;
 
+use std::time::Duration;
+
 use hyper::server::Server;
 
 use hasher::Hasher;
 
 fn main() {
-	Server::http("0.0.0.0:8080")
-		.unwrap()
-		.handle_threads(Hasher::new(), num_cpus::get())
-		.unwrap();
+	let mut srv = Server::http("0.0.0.0:8080").unwrap();
+	srv.keep_alive(Some(Duration::from_secs(120)));
+	srv.handle_threads(Hasher::new(), num_cpus::get()).unwrap();
 }
