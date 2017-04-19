@@ -19,6 +19,8 @@ use argon2rs::verifier::constant_eq;
 
 use byteorder::{BigEndian, ReadBytesExt};
 
+use memset::memzero;
+
 pub struct Hasher {
 	argon_v0: Argon2,
 	argon_cur: Argon2,
@@ -86,7 +88,7 @@ impl Hasher {
 
 			self.argon_cur.hash(&mut hash, &data, &salt, key.as_bytes(), ad.as_bytes());
 
-			// TODO: zero data
+			unsafe { memzero(&mut data[0], data.len()) };
 		};
 
 		let hdr = [0 as u8; 2];
@@ -168,7 +170,7 @@ impl Hasher {
 			expect.resize(hash_len, 0);
 			argon.hash(&mut expect, &data, &salt, key.as_bytes(), ad.as_bytes());
 
-			// TODO: zero data
+			unsafe { memzero(&mut data[0], data.len()) };
 
 			constant_eq(&expect, &hash)
 		};

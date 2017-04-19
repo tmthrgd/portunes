@@ -8,6 +8,7 @@ extern crate num_cpus;
 mod headers;
 mod params;
 mod hasher;
+mod memset;
 
 use hyper::server::Server;
 
