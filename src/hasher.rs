@@ -17,7 +17,7 @@ use hyper::mime::*;
 use argon2rs::Argon2;
 use argon2rs::verifier::constant_eq;
 
-use byteorder::{BigEndian, ReadBytesExt};
+use byteorder::{BigEndian, ByteOrder, ReadBytesExt};
 
 use memset::memzero;
 
@@ -93,7 +93,8 @@ impl Hasher {
 			};
 		};
 
-		let hdr = [0 as u8; 2];
+		let mut hdr = [0 as u8; 2];
+		BigEndian::write_u16(&mut hdr, params::cur::VERSION);
 
 		*res.status_mut() = StatusCode::Ok;
 
@@ -119,7 +120,7 @@ impl Hasher {
 		};
 
 		let (argon, salt_len, hash_len, rehash) = match req.read_u16::<BigEndian>() {
-			Ok(0) => {
+			Ok(params::v0::VERSION) => {
 				(&self.argon_v0,
 				 params::v0::SALT_LEN,
 				 params::v0::HASH_LEN,

@@ -10,6 +10,8 @@ pub mod v0 {
 	pub const HASH_LEN: usize = 16;
 
 	pub const REHASH: bool = false;
+
+	pub const VERSION: u16 = 0;
 }
 
 pub use self::v0 as cur;
