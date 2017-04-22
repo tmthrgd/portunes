@@ -217,10 +217,9 @@ impl Handler for Hasher {
 		res.headers_mut().set(ServerHeader {});
 
 		match match req.uri {
-		                      RequestUri::AbsolutePath(ref s) => s,
-		                      _ => return Hasher::error(res, StatusCode::BadRequest),
-		              }
-		              .as_ref() {
+		              RequestUri::AbsolutePath(ref s) => s.as_ref(),
+		              _ => return Hasher::error(res, StatusCode::BadRequest),
+		      } {
 			"/hash" => self.hash(req, res),
 			"/verify" => self.verify(req, res),
 			_ => Hasher::error(res, StatusCode::NotFound),
