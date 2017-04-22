@@ -114,6 +114,8 @@ impl Hasher {
 	}
 
 	fn verify(&self, mut req: Request, mut res: Response) {
+		*res.status_mut() = StatusCode::InternalServerError;
+
 		if req.method != Method::Post {
 			res.headers_mut().set(header::Allow(vec![Method::Post]));
 			return Hasher::error(res, StatusCode::MethodNotAllowed);
@@ -210,6 +212,8 @@ impl Hasher {
 
 impl Handler for Hasher {
 	fn handle(&self, req: Request, mut res: Response) {
+		*res.status_mut() = StatusCode::InternalServerError;
+
 		res.headers_mut().set(ServerHeader {});
 
 		match match req.uri {
