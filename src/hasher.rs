@@ -183,15 +183,18 @@ impl Hasher {
 		};
 
 		*res.status_mut() = if ok {
-			StatusCode::Ok
+			StatusCode::NoContent
 		} else {
 			StatusCode::Forbidden
 		};
 
 		{
 			let hdr = res.headers_mut();
-			hdr.set(header::ContentLength(0));
 			hdr.set(XRehash(rehash));
+
+			if !ok {
+				hdr.set(header::ContentLength(0));
+			};
 		};
 	}
 

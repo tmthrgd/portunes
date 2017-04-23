@@ -101,7 +101,7 @@ func verify(verifyURL *url.URL, hash []byte, password, key, ad string) bool {
 	fmt.Printf("%s\n", b)
 
 	switch resp.StatusCode {
-	case http.StatusOK, http.StatusForbidden:
+	case http.StatusNoContent, http.StatusForbidden:
 	default:
 		panic(resp.Status)
 	}
@@ -111,7 +111,7 @@ func verify(verifyURL *url.URL, hash []byte, password, key, ad string) bool {
 	}
 
 	fmt.Printf("################ %s\n", time.Since(start))
-	return resp.StatusCode == http.StatusOK
+	return resp.StatusCode >= 200 && resp.StatusCode < 300
 }
 
 func main() {
