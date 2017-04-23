@@ -20,6 +20,8 @@ import (
 	"time"
 )
 
+var dumpReqBody = true
+
 func must(err error) {
 	if err != nil {
 		panic(err)
@@ -35,7 +37,7 @@ func getHash(hashURL *url.URL, password, key, ad string) []byte {
 	req.Header.Set("X-Key", key)
 	req.Header.Set("X-Associated-Data", ad)
 
-	b, err := httputil.DumpRequestOut(req, true)
+	b, err := httputil.DumpRequestOut(req, dumpReqBody)
 	must(err)
 
 	fmt.Println("================")
@@ -80,12 +82,14 @@ func verify(verifyURL *url.URL, hash []byte, password, key, ad string) bool {
 	fmt.Println("================")
 	fmt.Printf("%s\n\n", b)
 
-	var buf bytes.Buffer
-	d := hex.Dumper(&buf)
-	d.Write(hash)
-	io.WriteString(d, password)
-	d.Close()
-	fmt.Println(buf.String())
+	if dumpReqBody {
+		var buf bytes.Buffer
+		d := hex.Dumper(&buf)
+		d.Write(hash)
+		io.WriteString(d, password)
+		d.Close()
+		fmt.Println(buf.String())
+	}
 
 	resp, err := http.DefaultClient.Do(req)
 	must(err)
@@ -185,7 +189,18 @@ func main() {
 	}))
 
 	password := "password🔐🔓"
-	for len(password) < 2048 {
+	for len(password) < 1024 {
+		password += password
+	}
+
+	hash = getHash(&hashURL, password, "🔑", "📋")
+	if !verify(&verifyURL, hash, password, "🔑", "📋") {
+		panic("failed with long password")
+	}
+
+	dumpReqBody = false
+
+	for len(password) < 1048576 {
 		password += password
 	}
 
