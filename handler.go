@@ -7,14 +7,10 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"unsafe"
+	_ "unsafe" // for go:linkname
 
-	"golang.org/x/crypto/argon2"
+	_ "golang.org/x/crypto/argon2" // for argon2_deriveKey
 )
-
-var _ = argon2.IDKey
-
-type _ = unsafe.Pointer
 
 //go:linkname argon2_deriveKey golang.org/x/crypto/argon2.deriveKey
 func argon2_deriveKey(mode int, password, salt, secret, data []byte, time, memory uint32, threads uint8, keyLen uint32) []byte
