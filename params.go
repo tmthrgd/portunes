@@ -31,9 +31,13 @@ var paramsMap = map[uint32]*params{
 var paramsCur = params0
 
 func init() {
+	if paramsCur.Rehash {
+		panic("paramsCur.Rehash is true")
+	}
+
 	for vers, params := range paramsMap {
 		if params.Version != vers {
-			panic("paramsMap not 1:1")
+			panic("paramsMap has mismatched version")
 		}
 	}
 }
