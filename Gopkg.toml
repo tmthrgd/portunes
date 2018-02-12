@@ -8,4 +8,5 @@
   name = "golang.org/x/crypto"
 
 [prune]
+  go-tests = true
   unused-packages = true
