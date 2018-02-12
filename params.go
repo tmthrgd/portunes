@@ -19,7 +19,7 @@ type params struct {
 
 	Rehash bool
 
-	Version uint16
+	Version uint32
 }
 
 var (
@@ -27,14 +27,14 @@ var (
 		Passes:  3,
 		Lanes:   2,
 		Memory:  1 << 19,
-		Variant: argon2i,
+		Variant: argon2id,
 
-		SaltLen: 14,
+		SaltLen: 16,
 		HashLen: 16,
 	}
 )
 
-var paramsMap = map[uint16]*params{
+var paramsMap = map[uint32]*params{
 	0: params0,
 }
 

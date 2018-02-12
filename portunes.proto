@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package portunes;
+option go_package = "proto";
+
+option optimize_for = SPEED;
+
+service Portunes {
+	rpc Hash(HashRequest) returns (HashResponse) {}
+	rpc Verify(VerifyRequest) returns (VerifyResponse) {}
+}
+
+message HashRequest {
+	string password = 1;
+	bytes key = 2;
+	bytes data = 3;
+}
+
+message HashResponse {
+	Hash hash = 1;
+}
+
+message VerifyRequest {
+	string password = 1;
+	bytes key = 2;
+	bytes data = 3;
+
+	Hash hash = 4;
+}
+
+message VerifyResponse {
+	bool valid = 1;
+	bool rehash = 2;
+}
+
+message Hash {
+	uint32 version = 1;
+	bytes salt = 2;
+	bytes hash = 3;
+}

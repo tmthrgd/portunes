@@ -1,17 +1,24 @@
 package main
 
 import (
+	"flag"
 	"log"
-	"net/http"
+	"net"
 
 	"github.com/tmthrgd/portunes"
+	"google.golang.org/grpc"
 )
 
 func main() {
-	mux := http.NewServeMux()
-	mux.Handle(portunes.HashPath, http.HandlerFunc(portunes.Hash))
-	mux.Handle(portunes.VerifyPath, http.HandlerFunc(portunes.Verify))
+	addr := flag.String("addr", ":8080", "the address to listen on")
+	flag.Parse()
 
-	log.Println("Listening on 0.0.0.0:8080")
-	log.Fatal(http.ListenAndServe("0.0.0.0:8080", mux))
+	ln, err := net.Listen("tcp", *addr)
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+
+	gs := grpc.NewServer()
+	portunes.AttachServer(gs)
+	log.Fatal(gs.Serve(ln))
 }
