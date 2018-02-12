@@ -12,7 +12,7 @@ import (
 	_ "golang.org/x/crypto/argon2" // for argon2_deriveKey
 )
 
-//go:linkname argon2_deriveKey golang.org/x/crypto/argon2.deriveKey
+//go:linkname argon2_deriveKey github.com/tmthrgd/portunes/vendor/golang.org/x/crypto/argon2.deriveKey
 func argon2_deriveKey(mode int, password, salt, secret, data []byte, time, memory uint32, threads uint8, keyLen uint32) []byte
 
 const (
