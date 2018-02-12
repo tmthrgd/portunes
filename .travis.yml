@@ -1,11 +1,8 @@
-language: rust
-rust:
-  - nightly
-cache: cargo
-before_script:
-  - eval "$(gimme 1.8)"
-  - cargo build --release --verbose
-script:
-  - go version
-  - ./target/release/portunes &
-  - go run test.go -count 10
+language: go
+go:
+    - 1.9.x
+    - tip
+matrix:
+    fast_finish: true
+    allow_failures:
+        - go: tip
