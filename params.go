@@ -1,6 +1,8 @@
 package portunes
 
 type params struct {
+	Version uint32
+
 	Passes uint32 // time
 	Lanes  uint8  // threads
 	Memory uint32
@@ -9,8 +11,6 @@ type params struct {
 	HashLen int // keyLen
 
 	Rehash bool
-
-	Version uint32
 }
 
 var params0 = &params{
