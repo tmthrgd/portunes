@@ -1,18 +1,9 @@
 package portunes
 
-type variant int
-
-const (
-	argon2d variant = iota
-	argon2i
-	argon2id
-)
-
 type params struct {
-	Passes  uint32 // time
-	Lanes   uint8  // threads
-	Memory  uint32
-	Variant variant
+	Passes uint32 // time
+	Lanes  uint8  // threads
+	Memory uint32
 
 	SaltLen int
 	HashLen int // keyLen
@@ -24,10 +15,9 @@ type params struct {
 
 var (
 	params0 = &params{
-		Passes:  3,
-		Lanes:   2,
-		Memory:  1 << 19,
-		Variant: argon2id,
+		Passes: 3,
+		Lanes:  2,
+		Memory: 1 << 19,
 
 		SaltLen: 16,
 		HashLen: 16,
