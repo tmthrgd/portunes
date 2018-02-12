@@ -13,16 +13,14 @@ type params struct {
 	Version uint32
 }
 
-var (
-	params0 = &params{
-		Passes: 3,
-		Lanes:  2,
-		Memory: 1 << 19,
+var params0 = &params{
+	Passes: 3,
+	Lanes:  2,
+	Memory: 1 << 19,
 
-		SaltLen: 16,
-		HashLen: 16,
-	}
-)
+	SaltLen: 16,
+	HashLen: 16,
+}
 
 var paramsMap = map[uint32]*params{
 	0: params0,
