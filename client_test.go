@@ -23,7 +23,7 @@ func testingClient() (c *Client, stop func()) {
 	AttachServer(srv)
 
 	go func() {
-		if err := srv.Serve(ln); err != nil {
+		if err := srv.Serve(ln); err != nil && err != grpc.ErrServerStopped {
 			panic(err)
 		}
 	}()
