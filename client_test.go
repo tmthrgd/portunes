@@ -147,6 +147,8 @@ func TestLongPassword(t *testing.T) {
 		{"1MiB", 1 << 20},
 		{"3MiB", 3 << 20},
 	} {
+		tcase := tcase // capture range variable
+
 		t.Run(tcase.name, func(t *testing.T) {
 			password := "password🔐🔓"
 			password = strings.Repeat(password, tcase.size/len(password)+1)
@@ -178,6 +180,8 @@ func TestVectors(t *testing.T) {
 	defer stop()
 
 	for i, vector := range testVectors {
+		vector := vector // capture range variable
+
 		hash, err := hex.DecodeString(vector.hash)
 		require.NoError(t, err, "invalid test vector hash")
 
