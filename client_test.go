@@ -2,6 +2,8 @@ package portunes
 
 import (
 	"context"
+	"encoding/hex"
+	"fmt"
 	"net"
 	"strings"
 	"testing"
@@ -160,6 +162,30 @@ func TestLongPassword(t *testing.T) {
 
 			assert.True(t, valid, "valid")
 			assert.False(t, rehash, "rehash")
+		})
+	}
+}
+
+var testVectors = []struct {
+	password, salt, hash string
+	valid, rehash        bool
+}{
+	{"password🔐🔓", "🔑📋", "005587e939e96775433bd639e73d2c1cb298f55073d34d19d6375f888702402aa4", true, false},
+}
+
+func TestVectors(t *testing.T) {
+	c, stop := testingClient()
+	defer stop()
+
+	for i, vector := range testVectors {
+		hash, err := hex.DecodeString(vector.hash)
+		require.NoError(t, err, "invalid test vector hash")
+
+		t.Run(fmt.Sprintf("#%d", i), func(t *testing.T) {
+			valid, rehash, err := c.WithSalt([]byte(vector.salt)).Verify(context.Background(), vector.password, hash)
+			require.NoError(t, err)
+			assert.Equal(t, vector.valid, valid, "valid")
+			assert.Equal(t, vector.rehash, rehash, "rehash")
 		})
 	}
 }
