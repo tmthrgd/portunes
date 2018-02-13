@@ -15,6 +15,8 @@ import (
 
 type server struct{}
 
+// AttachServer registers the portunes.Hasher service to the
+// given grpc.Server.
 func AttachServer(s *grpc.Server) {
 	pb.RegisterHasherServer(s, server{})
 }
