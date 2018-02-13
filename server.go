@@ -44,7 +44,9 @@ func mergeSalt(salt, key, data []byte) []byte {
 }
 
 func (server) Hash(ctx context.Context, req *pb.HashRequest) (*pb.HashResponse, error) {
-	salt := make([]byte, paramsCur.SaltLen)
+	params := &paramsList[paramsCurIdx]
+
+	salt := make([]byte, params.SaltLen)
 	if _, err := rand.Read(salt); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -54,14 +56,14 @@ func (server) Hash(ctx context.Context, req *pb.HashRequest) (*pb.HashResponse, 
 		mergeSalt(salt,
 			req.GetKey(),
 			req.GetData()),
-		paramsCur.Passes,
-		paramsCur.Memory,
-		paramsCur.Lanes,
-		uint32(paramsCur.HashLen))
+		params.Passes,
+		params.Memory,
+		params.Lanes,
+		uint32(params.HashLen))
 
 	return &pb.HashResponse{
 		Hash: &pb.Hash{
-			Version: paramsCur.Version,
+			Version: uint32(paramsCurIdx),
 			Salt:    salt,
 			Hash:    hash,
 		},
@@ -74,10 +76,11 @@ func (server) Verify(ctx context.Context, req *pb.VerifyRequest) (*pb.VerifyResp
 		return nil, status.Error(codes.InvalidArgument, "missing hash")
 	}
 
-	params, ok := paramsMap[hash.GetVersion()]
-	if !ok {
+	if hash.GetVersion() >= uint32(len(paramsList)) {
 		return nil, status.Error(codes.InvalidArgument, "invalid version")
 	}
+
+	params := &paramsList[hash.GetVersion()]
 
 	expect := argon2.IDKey(
 		[]byte(req.GetPassword()),

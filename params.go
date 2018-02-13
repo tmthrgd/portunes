@@ -1,8 +1,6 @@
 package portunes
 
 type params struct {
-	Version uint32
-
 	Passes uint32 // time
 	Lanes  uint8  // threads
 	Memory uint32
@@ -13,29 +11,21 @@ type params struct {
 	Rehash bool
 }
 
-var params0 = &params{
-	Passes: 3,
-	Lanes:  2,
-	Memory: 1 << 19,
+var paramsList = []params{
+	params{
+		Passes: 3,
+		Lanes:  2,
+		Memory: 1 << 19,
 
-	SaltLen: 16,
-	HashLen: 16,
+		SaltLen: 16,
+		HashLen: 16,
+	},
 }
 
-var paramsMap = map[uint32]*params{
-	0: params0,
-}
-
-var paramsCur = params0
+var paramsCurIdx = len(paramsList) - 1
 
 func init() {
-	if paramsCur.Rehash {
-		panic("paramsCur.Rehash is true")
-	}
-
-	for vers, params := range paramsMap {
-		if params.Version != vers {
-			panic("paramsMap has mismatched version")
-		}
+	if paramsList[paramsCurIdx].Rehash {
+		panic("paramsList[paramsCurIdx].Rehash is true")
 	}
 }
