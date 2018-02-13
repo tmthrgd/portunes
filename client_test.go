@@ -46,6 +46,8 @@ func testingClient() (c *Client, stop func()) {
 }
 
 func TestHash(t *testing.T) {
+	t.Parallel()
+
 	c, stop := testingClient()
 	defer stop()
 
@@ -58,6 +60,8 @@ func TestHash(t *testing.T) {
 }
 
 func TestVerify(t *testing.T) {
+	t.Parallel()
+
 	c, stop := testingClient()
 	defer stop()
 
@@ -76,6 +80,8 @@ func TestVerify(t *testing.T) {
 }
 
 func TestWrongPassword(t *testing.T) {
+	t.Parallel()
+
 	c, stop := testingClient()
 	defer stop()
 
@@ -96,6 +102,8 @@ func TestWrongPassword(t *testing.T) {
 }
 
 func TestWrongSalt(t *testing.T) {
+	t.Parallel()
+
 	c, stop := testingClient()
 	defer stop()
 
@@ -116,6 +124,8 @@ func TestWrongSalt(t *testing.T) {
 }
 
 func TestRandom(t *testing.T) {
+	t.Parallel()
+
 	c, stop := testingClient()
 	defer stop()
 
@@ -134,6 +144,8 @@ func TestRandom(t *testing.T) {
 }
 
 func TestLongPassword(t *testing.T) {
+	t.Parallel()
+
 	c, stop := testingClient()
 	defer stop()
 
@@ -150,6 +162,8 @@ func TestLongPassword(t *testing.T) {
 		tcase := tcase // capture range variable
 
 		t.Run(tcase.name, func(t *testing.T) {
+			//t.Parallel()
+
 			password := "password🔐🔓"
 			password = strings.Repeat(password, tcase.size/len(password)+1)
 			password = password[:tcase.size]
@@ -169,6 +183,8 @@ func TestLongPassword(t *testing.T) {
 }
 
 func TestHashUnique(t *testing.T) {
+	t.Parallel()
+
 	c, stop := testingClient()
 	defer stop()
 
@@ -191,6 +207,8 @@ var testVectors = []struct {
 }
 
 func TestVectors(t *testing.T) {
+	t.Parallel()
+
 	c, stop := testingClient()
 	defer stop()
 
@@ -201,6 +219,8 @@ func TestVectors(t *testing.T) {
 		require.NoError(t, err, "invalid test vector hash")
 
 		t.Run(fmt.Sprintf("#%d", i), func(t *testing.T) {
+			//t.Parallel()
+
 			valid, rehash, err := c.WithSalt([]byte(vector.salt)).Verify(context.Background(), vector.password, hash)
 			require.NoError(t, err)
 			assert.Equal(t, vector.valid, valid, "valid")
