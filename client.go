@@ -9,7 +9,7 @@ import (
 
 type Client struct {
 	cc *grpc.ClientConn
-	pc pb.PortunesClient
+	pc pb.HasherClient
 
 	key, data []byte
 }
@@ -17,7 +17,7 @@ type Client struct {
 func NewClient(cc *grpc.ClientConn) *Client {
 	return &Client{
 		cc: cc,
-		pc: pb.NewPortunesClient(cc),
+		pc: pb.NewHasherClient(cc),
 	}
 }
 

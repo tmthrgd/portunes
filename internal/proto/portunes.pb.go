@@ -162,97 +162,97 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// Client API for Portunes service
+// Client API for Hasher service
 
-type PortunesClient interface {
+type HasherClient interface {
 	Hash(ctx context.Context, in *HashRequest, opts ...grpc.CallOption) (*HashResponse, error)
 	Verify(ctx context.Context, in *VerifyRequest, opts ...grpc.CallOption) (*VerifyResponse, error)
 }
 
-type portunesClient struct {
+type hasherClient struct {
 	cc *grpc.ClientConn
 }
 
-func NewPortunesClient(cc *grpc.ClientConn) PortunesClient {
-	return &portunesClient{cc}
+func NewHasherClient(cc *grpc.ClientConn) HasherClient {
+	return &hasherClient{cc}
 }
 
-func (c *portunesClient) Hash(ctx context.Context, in *HashRequest, opts ...grpc.CallOption) (*HashResponse, error) {
+func (c *hasherClient) Hash(ctx context.Context, in *HashRequest, opts ...grpc.CallOption) (*HashResponse, error) {
 	out := new(HashResponse)
-	err := grpc.Invoke(ctx, "/portunes.Portunes/Hash", in, out, c.cc, opts...)
+	err := grpc.Invoke(ctx, "/portunes.Hasher/Hash", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *portunesClient) Verify(ctx context.Context, in *VerifyRequest, opts ...grpc.CallOption) (*VerifyResponse, error) {
+func (c *hasherClient) Verify(ctx context.Context, in *VerifyRequest, opts ...grpc.CallOption) (*VerifyResponse, error) {
 	out := new(VerifyResponse)
-	err := grpc.Invoke(ctx, "/portunes.Portunes/Verify", in, out, c.cc, opts...)
+	err := grpc.Invoke(ctx, "/portunes.Hasher/Verify", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// Server API for Portunes service
+// Server API for Hasher service
 
-type PortunesServer interface {
+type HasherServer interface {
 	Hash(context.Context, *HashRequest) (*HashResponse, error)
 	Verify(context.Context, *VerifyRequest) (*VerifyResponse, error)
 }
 
-func RegisterPortunesServer(s *grpc.Server, srv PortunesServer) {
-	s.RegisterService(&_Portunes_serviceDesc, srv)
+func RegisterHasherServer(s *grpc.Server, srv HasherServer) {
+	s.RegisterService(&_Hasher_serviceDesc, srv)
 }
 
-func _Portunes_Hash_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Hasher_Hash_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(HashRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(PortunesServer).Hash(ctx, in)
+		return srv.(HasherServer).Hash(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/portunes.Portunes/Hash",
+		FullMethod: "/portunes.Hasher/Hash",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PortunesServer).Hash(ctx, req.(*HashRequest))
+		return srv.(HasherServer).Hash(ctx, req.(*HashRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Portunes_Verify_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Hasher_Verify_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(VerifyRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(PortunesServer).Verify(ctx, in)
+		return srv.(HasherServer).Verify(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/portunes.Portunes/Verify",
+		FullMethod: "/portunes.Hasher/Verify",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PortunesServer).Verify(ctx, req.(*VerifyRequest))
+		return srv.(HasherServer).Verify(ctx, req.(*VerifyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-var _Portunes_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "portunes.Portunes",
-	HandlerType: (*PortunesServer)(nil),
+var _Hasher_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "portunes.Hasher",
+	HandlerType: (*HasherServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "Hash",
-			Handler:    _Portunes_Hash_Handler,
+			Handler:    _Hasher_Hash_Handler,
 		},
 		{
 			MethodName: "Verify",
-			Handler:    _Portunes_Verify_Handler,
+			Handler:    _Hasher_Verify_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -273,10 +273,10 @@ var fileDescriptor0 = []byte{
 	0xce, 0x00, 0x9b, 0xc6, 0x13, 0x04, 0x66, 0x2b, 0xa5, 0x72, 0xf1, 0x86, 0xa5, 0x16, 0x65, 0xa6,
 	0x55, 0x52, 0xcd, 0x5a, 0xb8, 0x35, 0x2c, 0x48, 0xd6, 0xd8, 0x71, 0xf1, 0xc1, 0xac, 0x81, 0x3a,
 	0x46, 0x84, 0x8b, 0xb5, 0x2c, 0x31, 0x27, 0x13, 0x62, 0x09, 0x47, 0x10, 0x84, 0x23, 0x24, 0xc6,
-	0xc5, 0x56, 0x94, 0x0a, 0xd6, 0xcd, 0x04, 0x16, 0x86, 0xf2, 0x8c, 0x9a, 0x18, 0xb9, 0x38, 0x02,
-	0xa0, 0x01, 0x25, 0x64, 0xce, 0xc5, 0x02, 0xf2, 0x97, 0x90, 0xa8, 0x1e, 0x3c, 0x2c, 0x91, 0x02,
-	0x4e, 0x4a, 0x0c, 0x5d, 0x18, 0x62, 0xa3, 0x12, 0x83, 0x90, 0x2d, 0x17, 0x1b, 0xc4, 0x15, 0x42,
-	0xe2, 0x08, 0x35, 0x28, 0xde, 0x97, 0x92, 0xc0, 0x94, 0x80, 0x69, 0x77, 0xe2, 0xf4, 0x60, 0x8c,
-	0x62, 0x05, 0xc7, 0x5a, 0x12, 0x1b, 0x98, 0x32, 0x06, 0x04, 0x00, 0x00, 0xff, 0xff, 0xfb, 0x29,
-	0x2e, 0x8b, 0xce, 0x01, 0x00, 0x00,
+	0xc5, 0x56, 0x94, 0x0a, 0xd6, 0xcd, 0x04, 0x16, 0x86, 0xf2, 0x8c, 0x1a, 0x18, 0xb9, 0xd8, 0x40,
+	0x7e, 0x49, 0x2d, 0x12, 0x32, 0xe7, 0x62, 0x01, 0xb1, 0x84, 0x44, 0xf5, 0xe0, 0x21, 0x89, 0x14,
+	0x6c, 0x52, 0x62, 0xe8, 0xc2, 0x10, 0xfb, 0x94, 0x18, 0x84, 0x6c, 0xb9, 0xd8, 0x20, 0x6e, 0x10,
+	0x12, 0x47, 0xa8, 0x41, 0xf1, 0xbc, 0x94, 0x04, 0xa6, 0x04, 0x4c, 0xbb, 0x13, 0xa7, 0x07, 0x63,
+	0x14, 0x2b, 0x38, 0xce, 0x92, 0xd8, 0xc0, 0x94, 0x31, 0x20, 0x00, 0x00, 0xff, 0xff, 0xd3, 0xc2,
+	0x09, 0x14, 0xcc, 0x01, 0x00, 0x00,
 }

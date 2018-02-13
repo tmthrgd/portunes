@@ -16,7 +16,7 @@ import (
 type server struct{}
 
 func AttachServer(s *grpc.Server) {
-	pb.RegisterPortunesServer(s, server{})
+	pb.RegisterHasherServer(s, server{})
 }
 
 func appendUint32(b []byte, x uint32) []byte {
