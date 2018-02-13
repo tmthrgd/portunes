@@ -5,7 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/subtle"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	pb "github.com/tmthrgd/portunes/internal/proto"
 	"golang.org/x/crypto/argon2"
 	"google.golang.org/grpc"
