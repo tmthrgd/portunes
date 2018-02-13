@@ -17,7 +17,7 @@ message HashRequest {
 }
 
 message HashResponse {
-	Hash hash = 1;
+	bytes hash = 1;
 }
 
 message VerifyRequest {
@@ -25,16 +25,10 @@ message VerifyRequest {
 	bytes key = 2;
 	bytes data = 3;
 
-	Hash hash = 4;
+	bytes hash = 4;
 }
 
 message VerifyResponse {
 	bool valid = 1;
 	bool rehash = 2;
-}
-
-message Hash {
-	uint32 version = 1;
-	bytes salt = 2;
-	bytes hash = 3;
 }

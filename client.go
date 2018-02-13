@@ -3,7 +3,6 @@ package portunes
 import (
 	"context"
 
-	"github.com/golang/protobuf/proto"
 	pb "github.com/tmthrgd/portunes/internal/proto"
 	"google.golang.org/grpc"
 )
@@ -50,20 +49,15 @@ func (c *Client) Hash(ctx context.Context, password string, opts ...grpc.CallOpt
 		return nil, err
 	}
 
-	return proto.Marshal(resp.GetHash())
+	return resp.GetHash(), nil
 }
 
 func (c *Client) Verify(ctx context.Context, password string, hash []byte, opts ...grpc.CallOption) (valid, rehash bool, err error) {
-	var msg pb.Hash
-	if err := proto.Unmarshal(hash, &msg); err != nil {
-		return false, false, err
-	}
-
 	resp, err := c.pc.Verify(ctx, &pb.VerifyRequest{
 		Password: password,
 		Key:      c.key,
 		Data:     c.data,
-		Hash:     &msg,
+		Hash:     hash,
 	}, opts...)
 	if err != nil {
 		return false, false, err

@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/subtle"
 
+	"github.com/gogo/protobuf/proto"
 	pb "github.com/tmthrgd/portunes/internal/proto"
 	"golang.org/x/crypto/argon2"
 	"google.golang.org/grpc"
@@ -61,12 +62,15 @@ func (server) Hash(ctx context.Context, req *pb.HashRequest) (*pb.HashResponse, 
 		params.Lanes,
 		uint32(params.HashLen))
 
+	const maxVarintBytes = 10
+	res := make([]byte, 0, maxVarintBytes+len(salt)+len(hash))
+
+	res = append(res, proto.EncodeVarint(uint64(paramsCurIdx))...)
+	res = append(res, salt...)
+	res = append(res, hash...)
+
 	return &pb.HashResponse{
-		Hash: &pb.Hash{
-			Version: uint32(paramsCurIdx),
-			Salt:    salt,
-			Hash:    hash,
-		},
+		Hash: res,
 	}, nil
 }
 
@@ -76,15 +80,24 @@ func (server) Verify(ctx context.Context, req *pb.VerifyRequest) (*pb.VerifyResp
 		return nil, status.Error(codes.InvalidArgument, "missing hash")
 	}
 
-	if hash.GetVersion() >= uint32(len(paramsList)) {
-		return nil, status.Error(codes.InvalidArgument, "invalid version")
+	version, n := proto.DecodeVarint(hash)
+	hash = hash[n:]
+
+	if version >= uint64(len(paramsList)) || n == 0 {
+		return nil, status.Error(codes.InvalidArgument, "invalid hash")
 	}
 
-	params := &paramsList[hash.GetVersion()]
+	params := &paramsList[version]
+
+	if len(hash) != params.SaltLen+params.HashLen {
+		return nil, status.Error(codes.InvalidArgument, "invalid hash")
+	}
+
+	salt, hash := hash[:params.SaltLen], hash[params.SaltLen:]
 
 	expect := argon2.IDKey(
 		[]byte(req.GetPassword()),
-		mergeSalt(hash.GetSalt(),
+		mergeSalt(salt,
 			req.GetKey(),
 			req.GetData()),
 		params.Passes,
@@ -92,7 +105,7 @@ func (server) Verify(ctx context.Context, req *pb.VerifyRequest) (*pb.VerifyResp
 		params.Lanes,
 		uint32(params.HashLen))
 
-	valid := subtle.ConstantTimeCompare(expect, hash.GetHash()) == 1
+	valid := subtle.ConstantTimeCompare(expect, hash) == 1
 
 	return &pb.VerifyResponse{
 		Valid:  valid,
