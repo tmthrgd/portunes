@@ -185,6 +185,24 @@ func TestHashUnique(t *testing.T) {
 	assert.NotEqual(t, hash1, hash2, "Hash outputs should be unique")
 }
 
+func TestEmptyPassword(t *testing.T) {
+	t.Parallel()
+
+	c, stop := testingClient()
+	defer stop()
+
+	hash, err := c.Hash(context.Background(), "", []byte("🔑📋"))
+	require.NoError(t, err)
+
+	t.Logf("%d:%02x", len(hash), hash)
+
+	valid, rehash, err := c.Verify(context.Background(), "", []byte("🔑📋"), hash)
+	require.NoError(t, err)
+
+	assert.True(t, valid, "valid")
+	assert.False(t, rehash, "rehash")
+}
+
 var testVectors = []struct {
 	password, salt, hash string
 	valid, rehash        bool
