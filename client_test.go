@@ -203,6 +203,24 @@ func TestEmptyPassword(t *testing.T) {
 	assert.False(t, rehash, "rehash")
 }
 
+func TestEmptySalt(t *testing.T) {
+	t.Parallel()
+
+	c, stop := testingClient()
+	defer stop()
+
+	hash, err := c.Hash(context.Background(), "password🔐🔓", nil)
+	require.NoError(t, err)
+
+	t.Logf("%d:%02x", len(hash), hash)
+
+	valid, rehash, err := c.Verify(context.Background(), "password🔐🔓", nil, hash)
+	require.NoError(t, err)
+
+	assert.True(t, valid, "valid")
+	assert.False(t, rehash, "rehash")
+}
+
 var testVectors = []struct {
 	password, salt, hash string
 	valid, rehash        bool
