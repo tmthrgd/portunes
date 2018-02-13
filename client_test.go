@@ -47,8 +47,7 @@ func TestHash(t *testing.T) {
 	c, stop := testingClient()
 	defer stop()
 
-	c = c.WithKey([]byte("🔑"))
-	c = c.WithAssociatedData([]byte("📋"))
+	c = c.WithSalt([]byte("🔑📋"))
 
 	hash, err := c.Hash(context.Background(), "password🔐🔓")
 	require.NoError(t, err)
@@ -60,8 +59,7 @@ func TestVerify(t *testing.T) {
 	c, stop := testingClient()
 	defer stop()
 
-	c = c.WithKey([]byte("🔑"))
-	c = c.WithAssociatedData([]byte("📋"))
+	c = c.WithSalt([]byte("🔑📋"))
 
 	hash, err := c.Hash(context.Background(), "password🔐🔓")
 	require.NoError(t, err)
@@ -79,8 +77,7 @@ func TestWrongPassword(t *testing.T) {
 	c, stop := testingClient()
 	defer stop()
 
-	c = c.WithKey([]byte("🔑"))
-	c = c.WithAssociatedData([]byte("📋"))
+	c = c.WithSalt([]byte("🔑📋"))
 
 	hash, err := c.Hash(context.Background(), "password🔐🔓")
 	require.NoError(t, err)
@@ -96,41 +93,19 @@ func TestWrongPassword(t *testing.T) {
 	}))
 }
 
-func TestWrongKey(t *testing.T) {
+func TestWrongSalt(t *testing.T) {
 	c, stop := testingClient()
 	defer stop()
 
-	c = c.WithKey([]byte("🔑"))
-	c = c.WithAssociatedData([]byte("📋"))
+	c = c.WithSalt([]byte("🔑📋"))
 
 	hash, err := c.Hash(context.Background(), "password🔐🔓")
 	require.NoError(t, err)
 
 	t.Logf("%d:%02x", len(hash), hash)
 
-	assert.NoError(t, quick.Check(func(key []byte) bool {
-		valid, _, err := c.WithKey(key).Verify(context.Background(), "password🔐🔓", hash)
-		require.NoError(t, err)
-		return !valid
-	}, &quick.Config{
-		MaxCountScale: 0.05,
-	}))
-}
-
-func TestWrongData(t *testing.T) {
-	c, stop := testingClient()
-	defer stop()
-
-	c = c.WithKey([]byte("🔑"))
-	c = c.WithAssociatedData([]byte("📋"))
-
-	hash, err := c.Hash(context.Background(), "password🔐🔓")
-	require.NoError(t, err)
-
-	t.Logf("%d:%02x", len(hash), hash)
-
-	assert.NoError(t, quick.Check(func(data []byte) bool {
-		valid, _, err := c.WithAssociatedData(data).Verify(context.Background(), "password🔐🔓", hash)
+	assert.NoError(t, quick.Check(func(salt []byte) bool {
+		valid, _, err := c.WithSalt(salt).Verify(context.Background(), "password🔐🔓", hash)
 		require.NoError(t, err)
 		return !valid
 	}, &quick.Config{
@@ -142,8 +117,8 @@ func TestRandom(t *testing.T) {
 	c, stop := testingClient()
 	defer stop()
 
-	assert.NoError(t, quick.Check(func(password string, key, data []byte) bool {
-		cc := c.WithKey(key).WithAssociatedData(data)
+	assert.NoError(t, quick.Check(func(password string, salt []byte) bool {
+		cc := c.WithSalt(salt)
 
 		hash, err := cc.Hash(context.Background(), password)
 		require.NoError(t, err)
@@ -160,8 +135,7 @@ func TestLongPassword(t *testing.T) {
 	c, stop := testingClient()
 	defer stop()
 
-	c = c.WithKey([]byte("🔑"))
-	c = c.WithAssociatedData([]byte("📋"))
+	c = c.WithSalt([]byte("🔑📋"))
 
 	for _, tcase := range []struct {
 		name string
@@ -194,8 +168,7 @@ func BenchmarkHash(b *testing.B) {
 	c, stop := testingClient()
 	defer stop()
 
-	c = c.WithKey([]byte("🔑"))
-	c = c.WithAssociatedData([]byte("📋"))
+	c = c.WithSalt([]byte("🔑📋"))
 
 	b.ResetTimer()
 
@@ -211,8 +184,7 @@ func BenchmarkHashParallel(b *testing.B) {
 	c, stop := testingClient()
 	defer stop()
 
-	c = c.WithKey([]byte("🔑"))
-	c = c.WithAssociatedData([]byte("📋"))
+	c = c.WithSalt([]byte("🔑📋"))
 
 	b.ResetTimer()
 
@@ -230,8 +202,7 @@ func BenchmarkVerify(b *testing.B) {
 	c, stop := testingClient()
 	defer stop()
 
-	c = c.WithKey([]byte("🔑"))
-	c = c.WithAssociatedData([]byte("📋"))
+	c = c.WithSalt([]byte("🔑📋"))
 
 	hash, err := c.Hash(context.Background(), "password🔐🔓")
 	require.NoError(b, err)
@@ -250,8 +221,7 @@ func BenchmarkVerifyParallel(b *testing.B) {
 	c, stop := testingClient()
 	defer stop()
 
-	c = c.WithKey([]byte("🔑"))
-	c = c.WithAssociatedData([]byte("📋"))
+	c = c.WithSalt([]byte("🔑📋"))
 
 	hash, err := c.Hash(context.Background(), "password🔐🔓")
 	require.NoError(b, err)

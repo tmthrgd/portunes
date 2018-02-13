@@ -19,44 +19,17 @@ func AttachServer(s *grpc.Server) {
 	pb.RegisterHasherServer(s, server{})
 }
 
-func appendUint32(b []byte, x uint32) []byte {
-	a := [4]byte{
-		byte(x),
-		byte(x >> 8),
-		byte(x >> 16),
-		byte(x >> 24),
-	}
-	return append(b, a[:]...)
-}
-
-func mergeSalt(salt, key, data []byte) []byte {
-	res := make([]byte, 0, 4+len(salt)+4+len(key)+4+len(data))
-
-	res = appendUint32(res, uint32(len(salt)))
-	res = append(res, salt...)
-
-	res = appendUint32(res, uint32(len(key)))
-	res = append(res, key...)
-
-	res = appendUint32(res, uint32(len(data)))
-	res = append(res, data...)
-
-	return res
-}
-
 func (server) Hash(ctx context.Context, req *pb.HashRequest) (*pb.HashResponse, error) {
 	params := &paramsList[paramsCurIdx]
 
-	salt := make([]byte, params.SaltLen)
+	salt := make([]byte, params.SaltLen, params.SaltLen+len(req.GetSalt()))
 	if _, err := rand.Read(salt); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	hash := argon2.IDKey(
 		[]byte(req.GetPassword()),
-		mergeSalt(salt,
-			req.GetKey(),
-			req.GetData()),
+		append(salt, req.GetSalt()...),
 		params.Passes,
 		params.Memory,
 		params.Lanes,
@@ -93,13 +66,12 @@ func (server) Verify(ctx context.Context, req *pb.VerifyRequest) (*pb.VerifyResp
 		return nil, status.Error(codes.InvalidArgument, "invalid hash")
 	}
 
-	salt, hash := hash[:params.SaltLen], hash[params.SaltLen:]
+	salt, hash := hash[:params.SaltLen:params.SaltLen],
+		hash[params.SaltLen:]
 
 	expect := argon2.IDKey(
 		[]byte(req.GetPassword()),
-		mergeSalt(salt,
-			req.GetKey(),
-			req.GetData()),
+		append(salt, req.GetSalt()...),
 		params.Passes,
 		params.Memory,
 		params.Lanes,

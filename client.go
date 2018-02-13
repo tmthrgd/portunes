@@ -11,7 +11,7 @@ type Client struct {
 	cc *grpc.ClientConn
 	pc pb.HasherClient
 
-	key, data []byte
+	salt []byte
 }
 
 func NewClient(cc *grpc.ClientConn) *Client {
@@ -21,17 +21,10 @@ func NewClient(cc *grpc.ClientConn) *Client {
 	}
 }
 
-func (c *Client) WithKey(key []byte) *Client {
+func (c *Client) WithSalt(salt []byte) *Client {
 	cc := new(Client)
 	*cc = *c
-	cc.key = append([]byte(nil), key...)
-	return cc
-}
-
-func (c *Client) WithAssociatedData(data []byte) *Client {
-	cc := new(Client)
-	*cc = *c
-	cc.data = append([]byte(nil), data...)
+	cc.salt = append([]byte(nil), salt...)
 	return cc
 }
 
@@ -42,8 +35,7 @@ func (c *Client) Close() error {
 func (c *Client) Hash(ctx context.Context, password string, opts ...grpc.CallOption) ([]byte, error) {
 	resp, err := c.pc.Hash(ctx, &pb.HashRequest{
 		Password: password,
-		Key:      c.key,
-		Data:     c.data,
+		Salt:     c.salt,
 	}, opts...)
 	if err != nil {
 		return nil, err
@@ -55,8 +47,7 @@ func (c *Client) Hash(ctx context.Context, password string, opts ...grpc.CallOpt
 func (c *Client) Verify(ctx context.Context, password string, hash []byte, opts ...grpc.CallOption) (valid, rehash bool, err error) {
 	resp, err := c.pc.Verify(ctx, &pb.VerifyRequest{
 		Password: password,
-		Key:      c.key,
-		Data:     c.data,
+		Salt:     c.salt,
 		Hash:     hash,
 	}, opts...)
 	if err != nil {
