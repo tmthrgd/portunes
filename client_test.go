@@ -168,6 +168,21 @@ func TestLongPassword(t *testing.T) {
 	}
 }
 
+func TestHashUnique(t *testing.T) {
+	c, stop := testingClient()
+	defer stop()
+
+	c = c.WithSalt([]byte("🔑📋"))
+
+	hash1, err := c.Hash(context.Background(), "password🔐🔓")
+	require.NoError(t, err)
+
+	hash2, err := c.Hash(context.Background(), "password🔐🔓")
+	require.NoError(t, err)
+
+	assert.NotEqual(t, hash1, hash2, "Hash outputs should be unique")
+}
+
 var testVectors = []struct {
 	password, salt, hash string
 	valid, rehash        bool
