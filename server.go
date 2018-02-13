@@ -24,7 +24,7 @@ func AttachServer(s *grpc.Server) {
 func (server) Hash(ctx context.Context, req *pb.HashRequest) (*pb.HashResponse, error) {
 	params := &paramsList[paramsCurIdx]
 
-	salt := make([]byte, params.SaltLen, params.SaltLen+len(req.GetPepper()))
+	salt := make([]byte, 16, 16+len(req.GetPepper()))
 	if _, err := rand.Read(salt); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -32,10 +32,8 @@ func (server) Hash(ctx context.Context, req *pb.HashRequest) (*pb.HashResponse, 
 	hash := argon2.IDKey(
 		[]byte(req.GetPassword()),
 		append(salt, req.GetPepper()...),
-		params.Passes,
-		params.Memory,
-		params.Lanes,
-		uint32(params.HashLen))
+		params.Passes, params.Memory,
+		params.Lanes, 16)
 
 	const maxVarintBytes = 10
 	res := make([]byte, 0, maxVarintBytes+len(salt)+len(hash))
@@ -64,20 +62,17 @@ func (server) Verify(ctx context.Context, req *pb.VerifyRequest) (*pb.VerifyResp
 
 	params := &paramsList[version]
 
-	if len(hash) != params.SaltLen+params.HashLen {
+	if len(hash) != 16+16 {
 		return nil, status.Error(codes.InvalidArgument, "invalid hash")
 	}
 
-	salt, hash := hash[:params.SaltLen:params.SaltLen],
-		hash[params.SaltLen:]
+	salt, hash := hash[:16:16], hash[16:]
 
 	expect := argon2.IDKey(
 		[]byte(req.GetPassword()),
 		append(salt, req.GetPepper()...),
-		params.Passes,
-		params.Memory,
-		params.Lanes,
-		uint32(params.HashLen))
+		params.Passes, params.Memory,
+		params.Lanes, 16)
 
 	valid := subtle.ConstantTimeCompare(expect, hash) == 1
 
