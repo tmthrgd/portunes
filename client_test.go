@@ -146,11 +146,6 @@ func TestRandom(t *testing.T) {
 func TestLongPassword(t *testing.T) {
 	t.Parallel()
 
-	c, stop := testingClient()
-	defer stop()
-
-	c = c.WithSalt([]byte("🔑📋"))
-
 	for _, tcase := range []struct {
 		name string
 		size int
@@ -162,7 +157,12 @@ func TestLongPassword(t *testing.T) {
 		tcase := tcase // capture range variable
 
 		t.Run(tcase.name, func(t *testing.T) {
-			//t.Parallel()
+			t.Parallel()
+
+			c, stop := testingClient()
+			defer stop()
+
+			c = c.WithSalt([]byte("🔑📋"))
 
 			password := "password🔐🔓"
 			password = strings.Repeat(password, tcase.size/len(password)+1)
@@ -209,9 +209,6 @@ var testVectors = []struct {
 func TestVectors(t *testing.T) {
 	t.Parallel()
 
-	c, stop := testingClient()
-	defer stop()
-
 	for i, vector := range testVectors {
 		vector := vector // capture range variable
 
@@ -219,7 +216,10 @@ func TestVectors(t *testing.T) {
 		require.NoError(t, err, "invalid test vector hash")
 
 		t.Run(fmt.Sprintf("#%d", i), func(t *testing.T) {
-			//t.Parallel()
+			t.Parallel()
+
+			c, stop := testingClient()
+			defer stop()
 
 			valid, rehash, err := c.WithSalt([]byte(vector.salt)).Verify(context.Background(), vector.password, hash)
 			require.NoError(t, err)
