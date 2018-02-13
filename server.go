@@ -24,14 +24,14 @@ func AttachServer(s *grpc.Server) {
 func (server) Hash(ctx context.Context, req *pb.HashRequest) (*pb.HashResponse, error) {
 	params := &paramsList[paramsCurIdx]
 
-	salt := make([]byte, params.SaltLen, params.SaltLen+len(req.GetSalt()))
+	salt := make([]byte, params.SaltLen, params.SaltLen+len(req.GetPepper()))
 	if _, err := rand.Read(salt); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	hash := argon2.IDKey(
 		[]byte(req.GetPassword()),
-		append(salt, req.GetSalt()...),
+		append(salt, req.GetPepper()...),
 		params.Passes,
 		params.Memory,
 		params.Lanes,
@@ -73,7 +73,7 @@ func (server) Verify(ctx context.Context, req *pb.VerifyRequest) (*pb.VerifyResp
 
 	expect := argon2.IDKey(
 		[]byte(req.GetPassword()),
-		append(salt, req.GetSalt()...),
+		append(salt, req.GetPepper()...),
 		params.Passes,
 		params.Memory,
 		params.Lanes,

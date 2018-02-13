@@ -95,7 +95,7 @@ func TestWrongPassword(t *testing.T) {
 	}))
 }
 
-func TestWrongSalt(t *testing.T) {
+func TestWrongPepper(t *testing.T) {
 	t.Parallel()
 
 	c, stop := testingClient()
@@ -106,8 +106,8 @@ func TestWrongSalt(t *testing.T) {
 
 	t.Logf("%d:%02x", len(hash), hash)
 
-	assert.NoError(t, quick.Check(func(salt []byte) bool {
-		valid, _, err := c.Verify(context.Background(), "password🔐🔓", salt, hash)
+	assert.NoError(t, quick.Check(func(pepper []byte) bool {
+		valid, _, err := c.Verify(context.Background(), "password🔐🔓", pepper, hash)
 		require.NoError(t, err)
 		return !valid
 	}, &quick.Config{
@@ -121,11 +121,11 @@ func TestRandom(t *testing.T) {
 	c, stop := testingClient()
 	defer stop()
 
-	assert.NoError(t, quick.Check(func(password string, salt []byte) bool {
-		hash, err := c.Hash(context.Background(), password, salt)
+	assert.NoError(t, quick.Check(func(password string, pepper []byte) bool {
+		hash, err := c.Hash(context.Background(), password, pepper)
 		require.NoError(t, err)
 
-		valid, _, err := c.Verify(context.Background(), password, salt, hash)
+		valid, _, err := c.Verify(context.Background(), password, pepper, hash)
 		require.NoError(t, err)
 		return valid
 	}, &quick.Config{
@@ -203,7 +203,7 @@ func TestEmptyPassword(t *testing.T) {
 	assert.False(t, rehash, "rehash")
 }
 
-func TestEmptySalt(t *testing.T) {
+func TestEmptyPepper(t *testing.T) {
 	t.Parallel()
 
 	c, stop := testingClient()
@@ -222,8 +222,8 @@ func TestEmptySalt(t *testing.T) {
 }
 
 var testVectors = []struct {
-	password, salt, hash string
-	valid, rehash        bool
+	password, pepper, hash string
+	valid, rehash          bool
 }{
 	{"password🔐🔓", "🔑📋", "005587e939e96775433bd639e73d2c1cb298f55073d34d19d6375f888702402aa4", true, false},
 }
@@ -243,7 +243,7 @@ func TestVectors(t *testing.T) {
 			c, stop := testingClient()
 			defer stop()
 
-			valid, rehash, err := c.Verify(context.Background(), vector.password, []byte(vector.salt), hash)
+			valid, rehash, err := c.Verify(context.Background(), vector.password, []byte(vector.pepper), hash)
 			require.NoError(t, err)
 			assert.Equal(t, vector.valid, valid, "valid")
 			assert.Equal(t, vector.rehash, rehash, "rehash")
@@ -255,12 +255,12 @@ func BenchmarkHash(b *testing.B) {
 	c, stop := testingClient()
 	defer stop()
 
-	salt := []byte("🔑📋")
+	pepper := []byte("🔑📋")
 
 	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
-		_, err := c.Hash(context.Background(), "password🔐🔓", salt)
+		_, err := c.Hash(context.Background(), "password🔐🔓", pepper)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -271,13 +271,13 @@ func BenchmarkHashParallel(b *testing.B) {
 	c, stop := testingClient()
 	defer stop()
 
-	salt := []byte("🔑📋")
+	pepper := []byte("🔑📋")
 
 	b.ResetTimer()
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			_, err := c.Hash(context.Background(), "password🔐🔓", salt)
+			_, err := c.Hash(context.Background(), "password🔐🔓", pepper)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -289,15 +289,15 @@ func BenchmarkVerify(b *testing.B) {
 	c, stop := testingClient()
 	defer stop()
 
-	salt := []byte("🔑📋")
+	pepper := []byte("🔑📋")
 
-	hash, err := c.Hash(context.Background(), "password🔐🔓", salt)
+	hash, err := c.Hash(context.Background(), "password🔐🔓", pepper)
 	require.NoError(b, err)
 
 	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
-		_, _, err := c.Verify(context.Background(), "password🔐🔓", salt, hash)
+		_, _, err := c.Verify(context.Background(), "password🔐🔓", pepper, hash)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -308,16 +308,16 @@ func BenchmarkVerifyParallel(b *testing.B) {
 	c, stop := testingClient()
 	defer stop()
 
-	salt := []byte("🔑📋")
+	pepper := []byte("🔑📋")
 
-	hash, err := c.Hash(context.Background(), "password🔐🔓", salt)
+	hash, err := c.Hash(context.Background(), "password🔐🔓", pepper)
 	require.NoError(b, err)
 
 	b.ResetTimer()
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			_, _, err := c.Verify(context.Background(), "password🔐🔓", salt, hash)
+			_, _, err := c.Verify(context.Background(), "password🔐🔓", pepper, hash)
 			if err != nil {
 				b.Fatal(err)
 			}

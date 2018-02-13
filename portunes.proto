@@ -12,7 +12,7 @@ service Hasher {
 
 message HashRequest {
 	string password = 1;
-	bytes salt = 2;
+	bytes pepper = 2;
 }
 
 message HashResponse {
@@ -21,7 +21,7 @@ message HashResponse {
 
 message VerifyRequest {
 	string password = 1;
-	bytes salt = 2;
+	bytes pepper = 2;
 
 	bytes hash = 3;
 }
