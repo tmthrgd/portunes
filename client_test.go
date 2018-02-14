@@ -16,11 +16,13 @@ import (
 	"google.golang.org/grpc"
 )
 
-func testingClient() (c *Client, stop func()) {
+func testingClient() (c *Client, s *Server, stop func()) {
 	ln := memlistener.NewMemoryListener()
 
 	srv := grpc.NewServer()
-	NewServer(1, 64*1024, 2).Attach(srv)
+
+	s = NewServer(1, 64*1024, 2)
+	s.Attach(srv)
 
 	go func() {
 		if err := srv.Serve(ln); err != nil && err != grpc.ErrServerStopped {
@@ -38,7 +40,7 @@ func testingClient() (c *Client, stop func()) {
 		panic(err)
 	}
 
-	return NewClient(cc), func() {
+	return NewClient(cc), s, func() {
 		cc.Close()
 		srv.Stop()
 		ln.Close()
@@ -48,7 +50,7 @@ func testingClient() (c *Client, stop func()) {
 func TestHash(t *testing.T) {
 	t.Parallel()
 
-	c, stop := testingClient()
+	c, _, stop := testingClient()
 	defer stop()
 
 	hash, err := c.Hash(context.Background(), "password🔐🔓", []byte("🔑📋"))
@@ -60,7 +62,7 @@ func TestHash(t *testing.T) {
 func TestVerify(t *testing.T) {
 	t.Parallel()
 
-	c, stop := testingClient()
+	c, _, stop := testingClient()
 	defer stop()
 
 	hash, err := c.Hash(context.Background(), "password🔐🔓", []byte("🔑📋"))
@@ -78,7 +80,7 @@ func TestVerify(t *testing.T) {
 func TestWrongPassword(t *testing.T) {
 	t.Parallel()
 
-	c, stop := testingClient()
+	c, _, stop := testingClient()
 	defer stop()
 
 	hash, err := c.Hash(context.Background(), "password🔐🔓", []byte("🔑📋"))
@@ -98,7 +100,7 @@ func TestWrongPassword(t *testing.T) {
 func TestWrongPepper(t *testing.T) {
 	t.Parallel()
 
-	c, stop := testingClient()
+	c, _, stop := testingClient()
 	defer stop()
 
 	hash, err := c.Hash(context.Background(), "password🔐🔓", []byte("🔑📋"))
@@ -118,7 +120,7 @@ func TestWrongPepper(t *testing.T) {
 func TestRandom(t *testing.T) {
 	t.Parallel()
 
-	c, stop := testingClient()
+	c, _, stop := testingClient()
 	defer stop()
 
 	assert.NoError(t, quick.Check(func(password string, pepper []byte) bool {
@@ -149,7 +151,7 @@ func TestLongPassword(t *testing.T) {
 		t.Run(tcase.name, func(t *testing.T) {
 			t.Parallel()
 
-			c, stop := testingClient()
+			c, _, stop := testingClient()
 			defer stop()
 
 			password := "password🔐🔓"
@@ -173,7 +175,7 @@ func TestLongPassword(t *testing.T) {
 func TestHashUnique(t *testing.T) {
 	t.Parallel()
 
-	c, stop := testingClient()
+	c, _, stop := testingClient()
 	defer stop()
 
 	hash1, err := c.Hash(context.Background(), "password🔐🔓", []byte("🔑📋"))
@@ -188,7 +190,7 @@ func TestHashUnique(t *testing.T) {
 func TestEmptyPassword(t *testing.T) {
 	t.Parallel()
 
-	c, stop := testingClient()
+	c, _, stop := testingClient()
 	defer stop()
 
 	hash, err := c.Hash(context.Background(), "", []byte("🔑📋"))
@@ -206,7 +208,7 @@ func TestEmptyPassword(t *testing.T) {
 func TestEmptyPepper(t *testing.T) {
 	t.Parallel()
 
-	c, stop := testingClient()
+	c, _, stop := testingClient()
 	defer stop()
 
 	hash, err := c.Hash(context.Background(), "password🔐🔓", nil)
@@ -242,7 +244,7 @@ func TestVectors(t *testing.T) {
 		t.Run(fmt.Sprintf("#%d", i), func(t *testing.T) {
 			t.Parallel()
 
-			c, stop := testingClient()
+			c, _, stop := testingClient()
 			defer stop()
 
 			valid, rehash, err := c.Verify(context.Background(), vector.password, []byte(vector.pepper), hash)
@@ -253,8 +255,65 @@ func TestVectors(t *testing.T) {
 	}
 }
 
+func TestRehash(t *testing.T) {
+	t.Parallel()
+
+	c, s, stop := testingClient()
+	defer stop()
+
+	hash, err := c.Hash(context.Background(), "password🔐🔓", []byte("🔑📋"))
+	require.NoError(t, err)
+
+	t.Logf("%d:%02x", len(hash), hash)
+
+	rehashFn := func(rehash bool) func(uint32, uint32, uint8) bool {
+		return func(uint32, uint32, uint8) bool {
+			return rehash
+		}
+	}
+
+	for _, tc := range []struct {
+		fn     func(uint32, uint32, uint8) bool
+		rehash bool
+	}{
+		{nil, false},
+		{rehashFn(false), false},
+		{rehashFn(true), true},
+	} {
+		s.SetRehashFunc(tc.fn)
+
+		valid, rehash, err := c.Verify(context.Background(), "password🔐🔓", []byte("🔑📋"), hash)
+		require.NoError(t, err)
+
+		assert.True(t, valid, "valid")
+		assert.Equal(t, tc.rehash, rehash, "rehash")
+	}
+}
+
+func TestDefaultRehash(t *testing.T) {
+	t.Parallel()
+
+	c, s, stop := testingClient()
+	defer stop()
+
+	s.SetParameters(1, 64*1024, 1)
+
+	hash, err := c.Hash(context.Background(), "password🔐🔓", []byte("🔑📋"))
+	require.NoError(t, err)
+
+	t.Logf("%d:%02x", len(hash), hash)
+
+	s.SetParameters(1, 128*1024, 1)
+
+	valid, rehash, err := c.Verify(context.Background(), "password🔐🔓", []byte("🔑📋"), hash)
+	require.NoError(t, err)
+
+	assert.True(t, valid, "valid")
+	assert.True(t, rehash, "rehash")
+}
+
 func BenchmarkHash(b *testing.B) {
-	c, stop := testingClient()
+	c, _, stop := testingClient()
 	defer stop()
 
 	pepper := []byte("🔑📋")
@@ -270,7 +329,7 @@ func BenchmarkHash(b *testing.B) {
 }
 
 func BenchmarkHashParallel(b *testing.B) {
-	c, stop := testingClient()
+	c, _, stop := testingClient()
 	defer stop()
 
 	pepper := []byte("🔑📋")
@@ -288,7 +347,7 @@ func BenchmarkHashParallel(b *testing.B) {
 }
 
 func BenchmarkVerify(b *testing.B) {
-	c, stop := testingClient()
+	c, _, stop := testingClient()
 	defer stop()
 
 	pepper := []byte("🔑📋")
@@ -307,7 +366,7 @@ func BenchmarkVerify(b *testing.B) {
 }
 
 func BenchmarkVerifyParallel(b *testing.B) {
-	c, stop := testingClient()
+	c, _, stop := testingClient()
 	defer stop()
 
 	pepper := []byte("🔑📋")
