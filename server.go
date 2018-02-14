@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/subtle"
+	"sync/atomic"
 
 	pb "github.com/tmthrgd/portunes/internal/proto"
 	"golang.org/x/crypto/argon2"
@@ -12,19 +13,31 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// Server represents a portunes.Hasher service.
-type Server struct {
+type params struct {
 	time, memory uint32
 	threads      uint8
 }
 
+// Server represents a portunes.Hasher service.
+type Server struct {
+	params atomic.Value // *params
+}
+
 // NewServer creates a Server with the given paramaters.
 func NewServer(time, memory uint32, threads uint8) *Server {
+	s := new(Server)
+	s.SetParameters(time, memory, threads)
+	return s
+}
+
+// SetParameters changes the paramaters the server is using
+// to hash passwords.
+func (s *Server) SetParameters(time, memory uint32, threads uint8) {
 	if time < 1 || threads < 1 {
 		panic("portunes: invalid argon2 paramaters")
 	}
 
-	return &Server{time, memory, threads}
+	s.params.Store(&params{time, memory, threads})
 }
 
 type hasherServer struct{ *Server }
@@ -41,13 +54,15 @@ func (s hasherServer) Hash(ctx context.Context, req *pb.HashRequest) (*pb.HashRe
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	p := s.params.Load().(*params)
+
 	hash := argon2.IDKey(
 		[]byte(req.GetPassword()),
 		append(salt, req.GetPepper()...),
-		s.time, s.memory, s.threads, 16)
+		p.time, p.memory, p.threads, 16)
 
 	res := make([]byte, 0, maxParamsLength+len(salt)+len(hash))
-	res = appendParams(res, s.time, s.memory, s.threads)
+	res = appendParams(res, p.time, p.memory, p.threads)
 	res = append(res, salt...)
 	res = append(res, hash...)
 
