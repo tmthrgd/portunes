@@ -13,7 +13,7 @@ func appendVarint32(buf []byte, v uint32) []byte {
 
 func consumeVarint32(buf []byte) (uint32, []byte, bool) {
 	tmp, n := binary.Uvarint(buf)
-	if n <= 0 || tmp&^(1<<32-1) != 0 {
+	if n <= 0 || tmp>>32 != 0 {
 		return 0, nil, false
 	}
 
@@ -25,70 +25,32 @@ const maxParamsLength = 2 + 2*binary.MaxVarintLen32
 const paramsV0 = 0
 
 func appendParams(buf []byte, time, memory uint32, threads uint8) []byte {
-	time, threads = time-1, threads-1
-
-	const alg = (1<<paramsV0 - 1)
-	if threads <= 0x0f && time <= 0x03 {
-		buf = append(buf, uint8(time<<5)|(threads<<1)|alg)
-	} else {
-		if threads < 0x3f {
-			buf = append(buf, 0x80|(threads<<1)|alg)
-		} else {
-			buf = append(buf, 0x80|(0x3f<<1)|alg, threads-0x3f)
-		}
-
-		buf = appendVarint32(buf, time)
-	}
-
-	memory = bits.RotateLeft32(memory, -16)
-	return appendVarint32(buf, memory)
+	buf = appendVarint32(buf,
+		uint32(threads-1)<<(paramsV0+1)|
+			((1<<paramsV0)-1))
+	buf = appendVarint32(buf, time-1)
+	return appendVarint32(buf,
+		bits.RotateLeft32(memory, -16))
 }
 
 func consumeParams(buf []byte) (time, memory uint32, threads uint8, rest []byte) {
-	failed := func() (uint32, uint32, uint8, []byte) {
+	tmp, buf, ok0 := consumeVarint32(buf)
+
+	vers := bits.TrailingZeros32(^tmp)
+	if vers != paramsV0 || !ok0 {
 		return 0, 0, 0, nil
 	}
 
-	if len(buf) < 1 {
-		return failed()
+	time, buf, ok1 := consumeVarint32(buf)
+	memory, buf, ok2 := consumeVarint32(buf)
+
+	if !ok1 || !ok2 || tmp>>(8+paramsV0+1) != 0 {
+		return 0, 0, 0, nil
 	}
 
-	v := buf[0]
-	if vers := bits.TrailingZeros8(^v); vers != paramsV0 {
-		return failed()
-	}
-
-	if v&0x80 == 0 {
-		threads = (v >> 1) & 0x0f
-		time = uint32(v) >> 5
-		buf = buf[1:]
-	} else {
-		if v == 0xfe {
-			if len(buf) < 2 {
-				return failed()
-			}
-
-			threads = buf[1] + 0x3f
-			buf = buf[2:]
-		} else {
-			threads = (v >> 1) & 0x3f
-			buf = buf[1:]
-		}
-
-		var ok bool
-		time, buf, ok = consumeVarint32(buf)
-		if !ok {
-			return failed()
-		}
-	}
-
-	memory, buf, ok := consumeVarint32(buf)
-	if !ok {
-		return failed()
-	}
-
-	time, threads = time+1, threads+1
+	time++
 	memory = bits.RotateLeft32(memory, 16)
+	threads = uint8(tmp>>(paramsV0+1)) + 1
 
 	return time, memory, threads, buf
 }
