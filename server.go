@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"crypto/subtle"
 
-	"github.com/golang/protobuf/proto"
 	pb "github.com/tmthrgd/portunes/internal/proto"
 	"golang.org/x/crypto/argon2"
 	"google.golang.org/grpc"
@@ -14,11 +13,18 @@ import (
 )
 
 // Server represents a portunes.Hasher service.
-type Server struct{}
+type Server struct {
+	time, memory uint32
+	threads      uint8
+}
 
 // NewServer creates an empty Server.
-func NewServer() *Server {
-	return new(Server)
+func NewServer(time, memory uint32, threads uint8) *Server {
+	if time < 1 || threads < 1 {
+		panic("portunes: invalid argon2 paramaters")
+	}
+
+	return &Server{time, memory, threads}
 }
 
 type hasherServer struct{ *Server }
@@ -29,9 +35,7 @@ func (s *Server) Attach(srv *grpc.Server) {
 	pb.RegisterHasherServer(srv, hasherServer{s})
 }
 
-func (hasherServer) Hash(ctx context.Context, req *pb.HashRequest) (*pb.HashResponse, error) {
-	params := &paramsList[paramsCurIdx]
-
+func (s hasherServer) Hash(ctx context.Context, req *pb.HashRequest) (*pb.HashResponse, error) {
 	salt := make([]byte, 16, 16+len(req.GetPepper()))
 	if _, err := rand.Read(salt); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -40,13 +44,10 @@ func (hasherServer) Hash(ctx context.Context, req *pb.HashRequest) (*pb.HashResp
 	hash := argon2.IDKey(
 		[]byte(req.GetPassword()),
 		append(salt, req.GetPepper()...),
-		params.Passes, params.Memory,
-		params.Lanes, 16)
+		s.time, s.memory, s.threads, 16)
 
-	const maxVarintBytes = 10
-	res := make([]byte, 0, maxVarintBytes+len(salt)+len(hash))
-
-	res = append(res, proto.EncodeVarint(uint64(paramsCurIdx))...)
+	res := make([]byte, 0, maxParamsLength+len(salt)+len(hash))
+	res = appendParams(res, s.time, s.memory, s.threads)
 	res = append(res, salt...)
 	res = append(res, hash...)
 
@@ -56,20 +57,7 @@ func (hasherServer) Hash(ctx context.Context, req *pb.HashRequest) (*pb.HashResp
 }
 
 func (hasherServer) Verify(ctx context.Context, req *pb.VerifyRequest) (*pb.VerifyResponse, error) {
-	hash := req.GetHash()
-	if hash == nil {
-		return nil, status.Error(codes.InvalidArgument, "missing hash")
-	}
-
-	version, n := proto.DecodeVarint(hash)
-	hash = hash[n:]
-
-	if version >= uint64(len(paramsList)) || n == 0 {
-		return nil, status.Error(codes.InvalidArgument, "invalid hash")
-	}
-
-	params := &paramsList[version]
-
+	time, memory, threads, hash := consumeParams(req.GetHash())
 	if len(hash) != 16+16 {
 		return nil, status.Error(codes.InvalidArgument, "invalid hash")
 	}
@@ -79,13 +67,12 @@ func (hasherServer) Verify(ctx context.Context, req *pb.VerifyRequest) (*pb.Veri
 	expect := argon2.IDKey(
 		[]byte(req.GetPassword()),
 		append(salt, req.GetPepper()...),
-		params.Passes, params.Memory,
-		params.Lanes, 16)
+		time, memory, threads, 16)
 
 	valid := subtle.ConstantTimeCompare(expect, hash) == 1
 
 	return &pb.VerifyResponse{
 		Valid:  valid,
-		Rehash: params.Rehash,
+		Rehash: false, // TODO: implement
 	}, nil
 }
