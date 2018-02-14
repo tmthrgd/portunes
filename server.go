@@ -21,6 +21,8 @@ type params struct {
 // Server represents a portunes.Hasher service.
 type Server struct {
 	params atomic.Value // *params
+
+	rehash func(time, memory uint32, threads uint8) bool
 }
 
 // NewServer creates a Server with the given paramaters.
@@ -38,6 +40,13 @@ func (s *Server) SetParameters(time, memory uint32, threads uint8) {
 	}
 
 	s.params.Store(&params{time, memory, threads})
+}
+
+// SetRehashFunc changes the callback used to determine
+// if a password should be rehashed or not. If fn is nil,
+// the rehash result will always be false.
+func (s *Server) SetRehashFunc(fn func(time, memory uint32, threads uint8) bool) {
+	s.rehash = fn
 }
 
 type hasherServer struct{ *Server }
@@ -71,7 +80,7 @@ func (s hasherServer) Hash(ctx context.Context, req *pb.HashRequest) (*pb.HashRe
 	}, nil
 }
 
-func (hasherServer) Verify(ctx context.Context, req *pb.VerifyRequest) (*pb.VerifyResponse, error) {
+func (s hasherServer) Verify(ctx context.Context, req *pb.VerifyRequest) (*pb.VerifyResponse, error) {
 	time, memory, threads, hash := consumeParams(req.GetHash())
 	if len(hash) != 16+16 {
 		return nil, status.Error(codes.InvalidArgument, "invalid hash")
@@ -87,7 +96,8 @@ func (hasherServer) Verify(ctx context.Context, req *pb.VerifyRequest) (*pb.Veri
 	valid := subtle.ConstantTimeCompare(expect, hash) == 1
 
 	return &pb.VerifyResponse{
-		Valid:  valid,
-		Rehash: false, // TODO: implement
+		Valid: valid,
+		Rehash: s.rehash != nil &&
+			s.rehash(time, memory, threads),
 	}, nil
 }
