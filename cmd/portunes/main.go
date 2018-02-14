@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"runtime"
 
 	"github.com/tmthrgd/portunes"
 	"google.golang.org/grpc"
@@ -12,9 +13,9 @@ import (
 
 func main() {
 	addr := flag.String("addr", ":8080", "the address to listen on")
-	time := flag.Uint("time", 3, "the number of argon2 iterations")
-	memory := flag.Uint("memory", 1<<19, "the argon2 memory size")
-	threads := flag.Uint("threads", 2, "the degree of parallelism for argon2")
+	time := flag.Uint("time", 1, "the number of argon2 iterations")
+	memory := flag.Uint("memory", 64*1024, "the argon2 memory size")
+	threads := flag.Uint("threads", uint(1+runtime.GOMAXPROCS(0))/2, "the degree of parallelism for argon2")
 	flag.Parse()
 
 	if uint(uint32(*time)) != *time ||
