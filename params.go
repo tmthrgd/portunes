@@ -22,16 +22,19 @@ func consumeVarint32(buf []byte) (uint32, []byte, bool) {
 
 const maxParamsLength = 2 + 2*binary.MaxVarintLen32
 
+const paramsV0 = 0
+
 func appendParams(buf []byte, time, memory uint32, threads uint8) []byte {
 	time, threads = time-1, threads-1
 
-	if threads <= 0x1f && time <= 0x03 {
-		buf = append(buf, uint8(time<<5)|threads)
+	const alg = (1<<paramsV0 - 1)
+	if threads <= 0x0f && time <= 0x03 {
+		buf = append(buf, uint8(time<<5)|(threads<<1)|alg)
 	} else {
-		if threads < 0x7f {
-			buf = append(buf, 0x80|threads)
+		if threads < 0x3f {
+			buf = append(buf, 0x80|(threads<<1)|alg)
 		} else {
-			buf = append(buf, 0x80|0x7f, threads-0x7f)
+			buf = append(buf, 0x80|(0x3f<<1)|alg, threads-0x3f)
 		}
 
 		buf = appendVarint32(buf, time)
@@ -50,20 +53,25 @@ func consumeParams(buf []byte) (time, memory uint32, threads uint8, rest []byte)
 		return failed()
 	}
 
-	if buf[0]&0x80 == 0 {
-		threads = buf[0] & 0x1f
-		time = uint32(buf[0]) >> 5
+	v := buf[0]
+	if vers := bits.TrailingZeros8(^v); vers != paramsV0 {
+		return failed()
+	}
+
+	if v&0x80 == 0 {
+		threads = (v >> 1) & 0x0f
+		time = uint32(v) >> 5
 		buf = buf[1:]
 	} else {
-		if buf[0] == 0xff {
+		if v == 0xfe {
 			if len(buf) < 2 {
 				return failed()
 			}
 
-			threads = buf[1] + 0x7f
+			threads = buf[1] + 0x3f
 			buf = buf[2:]
 		} else {
-			threads = buf[0] & 0x7f
+			threads = (v >> 1) & 0x3f
 			buf = buf[1:]
 		}
 
