@@ -20,7 +20,7 @@ func testingClient() (c *Client, stop func()) {
 	ln := memlistener.NewMemoryListener()
 
 	srv := grpc.NewServer()
-	NewServer(3, 1<<19, 2).Attach(srv)
+	NewServer(1, 64*1024, 2).Attach(srv)
 
 	go func() {
 		if err := srv.Serve(ln); err != nil && err != grpc.ErrServerStopped {
@@ -225,6 +225,7 @@ var testVectors = []struct {
 	password, pepper, hash string
 	valid, rehash          bool
 }{
+	{"password🔐🔓", "🔑📋", "0101a040fa69802700907ba1bf2887cb5be9aa9850365d0d2e0a973ac5da63153c7b", true, false},
 	{"password🔐🔓", "🔑📋", "41085587e939e96775433bd639e73d2c1cb298f55073d34d19d6375f888702402aa4", true, false},
 }
 
