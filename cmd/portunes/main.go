@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 	"net"
+	"os"
 
 	"github.com/tmthrgd/portunes"
 	"google.golang.org/grpc"
@@ -11,7 +12,17 @@ import (
 
 func main() {
 	addr := flag.String("addr", ":8080", "the address to listen on")
+	time := flag.Uint("time", 3, "the number of argon2 iterations")
+	memory := flag.Uint("memory", 1<<19, "the argon2 memory size")
+	threads := flag.Uint("threads", 2, "the degree of parallelism for argon2")
 	flag.Parse()
+
+	if uint(uint32(*time)) != *time ||
+		uint(uint32(*memory)) != *memory ||
+		uint(uint8(*threads)) != *threads {
+		flag.Usage()
+		os.Exit(1)
+	}
 
 	ln, err := net.Listen("tcp", *addr)
 	if err != nil {
@@ -19,6 +30,6 @@ func main() {
 	}
 
 	gs := grpc.NewServer()
-	portunes.NewServer(3, 1<<19, 2).Attach(gs)
+	portunes.NewServer(uint32(*time), uint32(*memory), uint8(*threads)).Attach(gs)
 	log.Fatal(gs.Serve(ln))
 }
