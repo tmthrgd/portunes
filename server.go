@@ -26,6 +26,8 @@ type Server struct {
 }
 
 // NewServer creates a Server with the given paramaters.
+//
+// See SetParameters for recommended parameters.
 func NewServer(time, memory uint32, threads uint8) *Server {
 	s := new(Server)
 	s.SetParameters(time, memory, threads)
@@ -33,8 +35,25 @@ func NewServer(time, memory uint32, threads uint8) *Server {
 	return s
 }
 
-// SetParameters changes the paramaters the server is using
-// to hash passwords.
+// SetParameters changes the Argon2id cost parameters the
+// server is using to hash passwords.
+//
+// The CPU cost and parallism degree must be greater than
+// zero. The time parameter specifies the number of passes
+// over the memory and the memory parameter specifies the
+// size of the memory in KiB. For example memory=64*1024
+// sets the memory cost to ~64 MB. The number of threads
+// can be adjusted to the numbers of available CPUs. The
+// cost parameters should be increased as memory latency
+// and CPU parallelism increases.
+//
+// The recommended parameters for non-interactive
+// operations (taken from [1]) are time=1 and to use the
+// maximum available memory. The x/crypto/argon2 package[2]
+// recommends time=1 and memory=64*1024 as a sensible cost.
+//
+// [1] https://tools.ietf.org/html/draft-irtf-cfrg-argon2-03#section-9.3
+// [2] https://godoc.org/golang.org/x/crypto/argon2#IDKey
 func (s *Server) SetParameters(time, memory uint32, threads uint8) {
 	if time < 1 || threads < 1 {
 		panic("portunes: invalid argon2 paramaters")
