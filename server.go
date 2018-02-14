@@ -18,7 +18,7 @@ type Server struct {
 	threads      uint8
 }
 
-// NewServer creates an empty Server.
+// NewServer creates a Server with the given paramaters.
 func NewServer(time, memory uint32, threads uint8) *Server {
 	if time < 1 || threads < 1 {
 		panic("portunes: invalid argon2 paramaters")
