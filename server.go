@@ -29,6 +29,7 @@ type Server struct {
 func NewServer(time, memory uint32, threads uint8) *Server {
 	s := new(Server)
 	s.SetParameters(time, memory, threads)
+	s.SetRehashFunc(s.defaultRehash)
 	return s
 }
 
@@ -45,8 +46,16 @@ func (s *Server) SetParameters(time, memory uint32, threads uint8) {
 // SetRehashFunc changes the callback used to determine
 // if a password should be rehashed or not. If fn is nil,
 // the rehash result will always be false.
+//
+// By default, rehash will be true if the memory usage has
+// increased.
 func (s *Server) SetRehashFunc(fn func(time, memory uint32, threads uint8) bool) {
 	s.rehash = fn
+}
+
+func (s *Server) defaultRehash(time, memory uint32, threads uint8) bool {
+	p := s.params.Load().(*params)
+	return memory < p.memory
 }
 
 type hasherServer struct{ *Server }
