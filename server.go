@@ -13,15 +13,23 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type server struct{}
+// Server represents a portunes.Hasher service.
+type Server struct{}
 
-// AttachServer registers the portunes.Hasher service to the
-// given grpc.Server.
-func AttachServer(s *grpc.Server) {
-	pb.RegisterHasherServer(s, server{})
+// NewServer creates an empty Server.
+func NewServer() *Server {
+	return new(Server)
 }
 
-func (server) Hash(ctx context.Context, req *pb.HashRequest) (*pb.HashResponse, error) {
+type hasherServer struct{ *Server }
+
+// Attach registers the portunes.Hasher service to the
+// given grpc.Server.
+func (s *Server) Attach(srv *grpc.Server) {
+	pb.RegisterHasherServer(srv, hasherServer{s})
+}
+
+func (hasherServer) Hash(ctx context.Context, req *pb.HashRequest) (*pb.HashResponse, error) {
 	params := &paramsList[paramsCurIdx]
 
 	salt := make([]byte, 16, 16+len(req.GetPepper()))
@@ -47,7 +55,7 @@ func (server) Hash(ctx context.Context, req *pb.HashRequest) (*pb.HashResponse, 
 	}, nil
 }
 
-func (server) Verify(ctx context.Context, req *pb.VerifyRequest) (*pb.VerifyResponse, error) {
+func (hasherServer) Verify(ctx context.Context, req *pb.VerifyRequest) (*pb.VerifyResponse, error) {
 	hash := req.GetHash()
 	if hash == nil {
 		return nil, status.Error(codes.InvalidArgument, "missing hash")

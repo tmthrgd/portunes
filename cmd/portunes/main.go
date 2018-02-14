@@ -19,6 +19,6 @@ func main() {
 	}
 
 	gs := grpc.NewServer()
-	portunes.AttachServer(gs)
+	portunes.NewServer().Attach(gs)
 	log.Fatal(gs.Serve(ln))
 }

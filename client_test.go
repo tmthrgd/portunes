@@ -20,7 +20,7 @@ func testingClient() (c *Client, stop func()) {
 	ln := memlistener.NewMemoryListener()
 
 	srv := grpc.NewServer()
-	AttachServer(srv)
+	NewServer().Attach(srv)
 
 	go func() {
 		if err := srv.Serve(ln); err != nil && err != grpc.ErrServerStopped {
