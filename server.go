@@ -57,6 +57,8 @@ func NewServer(time, memory uint32, threads uint8) *Server {
 // maximum available memory. The x/crypto/argon2 package[2]
 // recommends time=1 and memory=64*1024 as a sensible cost.
 //
+// This method is safe to call after Attach.
+//
 // [1] https://tools.ietf.org/html/draft-irtf-cfrg-argon2-03#section-9.3
 // [2] https://godoc.org/golang.org/x/crypto/argon2#IDKey
 func (s *Server) SetParameters(time, memory uint32, threads uint8) {
@@ -73,6 +75,8 @@ func (s *Server) SetParameters(time, memory uint32, threads uint8) {
 //
 // By default, rehash will be true if the memory usage has
 // increased.
+//
+// This method is not safe to call after Attach.
 func (s *Server) SetRehashFunc(fn func(time, memory uint32, threads uint8) bool) {
 	s.rehash = fn
 }
