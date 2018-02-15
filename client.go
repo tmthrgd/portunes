@@ -5,6 +5,7 @@ import (
 
 	pb "github.com/tmthrgd/portunes/internal/proto"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/encoding"
 )
 
 // Client wraps a grpc.ClientConn for use with the
@@ -41,7 +42,7 @@ func (c *Client) Hash(ctx context.Context, password string, pepper []byte, opts 
 	resp, err := c.pc.Hash(ctx, &pb.HashRequest{
 		Password: password,
 		Pepper:   pepper,
-	}, opts...)
+	}, disableCompression(opts)...)
 	if err != nil {
 		return nil, err
 	}
@@ -63,10 +64,20 @@ func (c *Client) Verify(ctx context.Context, password string, pepper, hash []byt
 		Password: password,
 		Pepper:   pepper,
 		Hash:     hash,
-	}, opts...)
+	}, disableCompression(opts)...)
 	if err != nil {
 		return false, false, err
 	}
 
 	return resp.GetValid(), resp.GetRehash(), nil
+}
+
+// disableCompression does what it says on the tin. It's
+// used to ensure the underlying transport does not
+// introduce any compression side-channels. Otherwise it
+// would be possible to recover the pepper by manipulating
+// the password, or to learn information about the password,
+// by watching packet sizes on the wire.
+func disableCompression(opts []grpc.CallOption) []grpc.CallOption {
+	return append(opts, grpc.UseCompressor(encoding.Identity))
 }
