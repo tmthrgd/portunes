@@ -13,6 +13,11 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+const (
+	saltLen = 16
+	tagLen  = 16
+)
+
 type params struct {
 	time, memory uint32
 	threads      uint8
@@ -86,7 +91,7 @@ func (s *Server) Attach(srv *grpc.Server) {
 }
 
 func (s hasherServer) Hash(ctx context.Context, req *pb.HashRequest) (*pb.HashResponse, error) {
-	salt := make([]byte, 16, 16+len(req.GetPepper()))
+	salt := make([]byte, saltLen, saltLen+len(req.GetPepper()))
 	if _, err := rand.Read(salt); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -96,7 +101,7 @@ func (s hasherServer) Hash(ctx context.Context, req *pb.HashRequest) (*pb.HashRe
 	hash := argon2.IDKey(
 		[]byte(req.GetPassword()),
 		append(salt, req.GetPepper()...),
-		p.time, p.memory, p.threads, 16)
+		p.time, p.memory, p.threads, tagLen)
 
 	res := make([]byte, 0, maxParamsLength+len(salt)+len(hash))
 	res = appendParams(res, p.time, p.memory, p.threads)
@@ -110,16 +115,16 @@ func (s hasherServer) Hash(ctx context.Context, req *pb.HashRequest) (*pb.HashRe
 
 func (s hasherServer) Verify(ctx context.Context, req *pb.VerifyRequest) (*pb.VerifyResponse, error) {
 	time, memory, threads, hash := consumeParams(req.GetHash())
-	if len(hash) != 16+16 {
+	if len(hash) != saltLen+tagLen {
 		return nil, status.Error(codes.InvalidArgument, "invalid hash")
 	}
 
-	salt, hash := hash[:16:16], hash[16:]
+	salt, hash := hash[:saltLen:saltLen], hash[saltLen:]
 
 	expect := argon2.IDKey(
 		[]byte(req.GetPassword()),
 		append(salt, req.GetPepper()...),
-		time, memory, threads, 16)
+		time, memory, threads, tagLen)
 
 	valid := subtle.ConstantTimeCompare(expect, hash) == 1
 
