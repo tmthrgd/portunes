@@ -14,6 +14,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func testingClient() (c *Client, s *Server, stop func()) {
@@ -310,6 +312,48 @@ func TestDefaultRehash(t *testing.T) {
 
 	assert.True(t, valid, "valid")
 	assert.True(t, rehash, "rehash")
+}
+
+func TestDOSProtection(t *testing.T) {
+	t.Parallel()
+
+	c, s, stop := testingClient()
+	defer stop()
+
+	hash, err := c.Hash(context.Background(), "password🔐🔓", []byte("🔑📋"))
+	require.NoError(t, err)
+
+	t.Logf("%d:%02x", len(hash), hash)
+
+	dosProtFn := func(allow bool) func(uint32, uint32, uint8) bool {
+		return func(uint32, uint32, uint8) bool {
+			return allow
+		}
+	}
+
+	for _, tc := range []struct {
+		fn    func(uint32, uint32, uint8) bool
+		allow bool
+	}{
+		{nil, true},
+		{dosProtFn(false), false},
+		{dosProtFn(true), true},
+	} {
+		s.SetDOSProtectionFunc(tc.fn)
+
+		valid, rehash, err := c.Verify(context.Background(), "password🔐🔓", []byte("🔑📋"), hash)
+
+		if tc.allow {
+			require.NoError(t, err)
+
+			assert.True(t, valid, "valid")
+			assert.False(t, rehash, "rehash")
+		} else {
+			require.Error(t, err)
+
+			assert.Equal(t, codes.ResourceExhausted, status.Code(err), "invalid gRPC status code")
+		}
+	}
 }
 
 func BenchmarkHash(b *testing.B) {

@@ -27,7 +27,7 @@ type params struct {
 type Server struct {
 	params atomic.Value // *params
 
-	rehash func(time, memory uint32, threads uint8) bool
+	rehash, dosProt func(time, memory uint32, threads uint8) bool
 }
 
 // NewServer creates a Server with the given paramaters.
@@ -86,6 +86,18 @@ func (s *Server) defaultRehash(time, memory uint32, threads uint8) bool {
 	return memory < p.memory
 }
 
+// SetDOSProtectionFunc allows setting a callback to reject
+// password verification when the hash has too high a work
+// cost.
+//
+// The callback should return false to reject the the hash.
+// By default all password verification will be accepted.
+//
+// This method is not safe to call after Attach.
+func (s *Server) SetDOSProtectionFunc(fn func(time, memory uint32, threads uint8) bool) {
+	s.dosProt = fn
+}
+
 type hasherServer struct{ *Server }
 
 // Attach registers the portunes.Hasher service to the
@@ -121,6 +133,10 @@ func (s hasherServer) Verify(ctx context.Context, req *pb.VerifyRequest) (*pb.Ve
 	time, memory, threads, hash := consumeParams(req.GetHash())
 	if len(hash) != saltLen+tagLen {
 		return nil, status.Error(codes.InvalidArgument, "invalid hash")
+	}
+
+	if s.dosProt != nil && !s.dosProt(time, memory, threads) {
+		return nil, status.Error(codes.ResourceExhausted, "dos protection callback refused")
 	}
 
 	salt, hash := hash[:saltLen:saltLen], hash[saltLen:]
