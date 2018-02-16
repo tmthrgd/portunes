@@ -98,15 +98,15 @@ func (s *Server) SetDOSProtectionFunc(fn func(time, memory uint32, threads uint8
 	s.dosProt = fn
 }
 
-type hasherServer struct{ *Server }
+type pbServer struct{ *Server }
 
 // Attach registers the portunes.Hasher service to the
 // given grpc.Server.
 func (s *Server) Attach(srv *grpc.Server) {
-	pb.RegisterHasherServer(srv, hasherServer{s})
+	pb.RegisterHasherServer(srv, pbServer{s})
 }
 
-func (s hasherServer) Hash(ctx context.Context, req *pb.HashRequest) (*pb.HashResponse, error) {
+func (s pbServer) Hash(ctx context.Context, req *pb.HashRequest) (*pb.HashResponse, error) {
 	salt := make([]byte, saltLen, saltLen+len(req.GetPepper()))
 	if _, err := rand.Read(salt); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -129,7 +129,7 @@ func (s hasherServer) Hash(ctx context.Context, req *pb.HashRequest) (*pb.HashRe
 	}, nil
 }
 
-func (s hasherServer) Verify(ctx context.Context, req *pb.VerifyRequest) (*pb.VerifyResponse, error) {
+func (s pbServer) Verify(ctx context.Context, req *pb.VerifyRequest) (*pb.VerifyResponse, error) {
 	time, memory, threads, hash := consumeParams(req.GetHash())
 	if len(hash) != saltLen+tagLen {
 		return nil, status.Error(codes.InvalidArgument, "invalid hash")
