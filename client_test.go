@@ -18,12 +18,12 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func testingClient() (c *Client, s *Server, stop func()) {
+func testingClient(sopt ...ServerOption) (c *Client, s *Server, stop func()) {
 	ln := memlistener.NewMemoryListener()
 
 	srv := grpc.NewServer()
 
-	s = NewServer(1, 64*1024, 2)
+	s = NewServer(1, 64*1024, 2, sopt...)
 	s.Attach(srv)
 
 	go func() {
@@ -260,7 +260,7 @@ func TestVectors(t *testing.T) {
 func TestRehash(t *testing.T) {
 	t.Parallel()
 
-	c, s, stop := testingClient()
+	c, _, stop := testingClient()
 	defer stop()
 
 	hash, err := c.Hash(context.Background(), "password🔐🔓", []byte("🔑📋"))
@@ -282,7 +282,8 @@ func TestRehash(t *testing.T) {
 		{rehashFn(false), false},
 		{rehashFn(true), true},
 	} {
-		s.SetRehashFunc(tc.fn)
+		c, _, stop := testingClient(WithRehashFunc(tc.fn))
+		defer stop()
 
 		valid, rehash, err := c.Verify(context.Background(), "password🔐🔓", []byte("🔑📋"), hash)
 		require.NoError(t, err)
@@ -317,7 +318,7 @@ func TestDefaultRehash(t *testing.T) {
 func TestDOSProtection(t *testing.T) {
 	t.Parallel()
 
-	c, s, stop := testingClient()
+	c, _, stop := testingClient()
 	defer stop()
 
 	hash, err := c.Hash(context.Background(), "password🔐🔓", []byte("🔑📋"))
@@ -339,7 +340,8 @@ func TestDOSProtection(t *testing.T) {
 		{dosProtFn(false), false},
 		{dosProtFn(true), true},
 	} {
-		s.SetDOSProtectionFunc(tc.fn)
+		c, _, stop := testingClient(WithDOSProtectionFunc(tc.fn))
+		defer stop()
 
 		valid, rehash, err := c.Verify(context.Background(), "password🔐🔓", []byte("🔑📋"), hash)
 

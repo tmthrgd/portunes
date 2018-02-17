@@ -33,10 +33,15 @@ type Server struct {
 // NewServer creates a Server with the given paramaters.
 //
 // See SetParameters for recommended parameters.
-func NewServer(time, memory uint32, threads uint8) *Server {
+func NewServer(time, memory uint32, threads uint8, opts ...ServerOption) *Server {
 	s := new(Server)
 	s.SetParameters(time, memory, threads)
-	s.SetRehashFunc(s.defaultRehash)
+	s.rehash = s.defaultRehash
+
+	for _, opt := range opts {
+		opt(s)
+	}
+
 	return s
 }
 
@@ -69,33 +74,9 @@ func (s *Server) SetParameters(time, memory uint32, threads uint8) {
 	s.params.Store(&params{time, memory, threads})
 }
 
-// SetRehashFunc changes the callback used to determine
-// if a password should be rehashed or not. If fn is nil,
-// the rehash result will always be false.
-//
-// By default, rehash will be true if the memory usage has
-// increased.
-//
-// This method is not safe to call after Attach.
-func (s *Server) SetRehashFunc(fn func(time, memory uint32, threads uint8) bool) {
-	s.rehash = fn
-}
-
 func (s *Server) defaultRehash(time, memory uint32, threads uint8) bool {
 	p := s.params.Load().(*params)
 	return memory < p.memory
-}
-
-// SetDOSProtectionFunc allows setting a callback to reject
-// password verification when the hash has too high a work
-// cost.
-//
-// The callback should return false to reject the the hash.
-// By default all password verification will be accepted.
-//
-// This method is not safe to call after Attach.
-func (s *Server) SetDOSProtectionFunc(fn func(time, memory uint32, threads uint8) bool) {
-	s.dosProt = fn
 }
 
 type pbServer struct{ *Server }
@@ -153,4 +134,31 @@ func (s pbServer) Verify(ctx context.Context, req *pb.VerifyRequest) (*pb.Verify
 		Rehash: s.rehash != nil &&
 			s.rehash(time, memory, threads),
 	}, nil
+}
+
+// ServerOption allows changing the behaviour of the server.
+type ServerOption func(*Server)
+
+// WithRehashFunc changes the callback used to determine
+// if a password should be rehashed or not. If fn is nil,
+// the rehash result will always be false.
+//
+// By default, rehash will be true if the memory usage has
+// increased.
+func WithRehashFunc(fn func(time, memory uint32, threads uint8) bool) ServerOption {
+	return func(s *Server) {
+		s.rehash = fn
+	}
+}
+
+// WithDOSProtectionFunc allows setting a callback to
+// reject password verification when the hash has too high
+// a work cost.
+//
+// The callback should return false to reject the the hash.
+// By default all password verification will be accepted.
+func WithDOSProtectionFunc(fn func(time, memory uint32, threads uint8) bool) ServerOption {
+	return func(s *Server) {
+		s.dosProt = fn
+	}
 }
