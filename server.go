@@ -88,7 +88,7 @@ func (s *Server) Attach(srv *grpc.Server) {
 }
 
 func (s pbServer) Hash(ctx context.Context, req *pb.HashRequest) (*pb.HashResponse, error) {
-	salt := make([]byte, saltLen, saltLen+len(req.GetPepper()))
+	salt := make([]byte, saltLen, saltLen+len(req.Pepper))
 	if _, err := rand.Read(salt); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -96,8 +96,8 @@ func (s pbServer) Hash(ctx context.Context, req *pb.HashRequest) (*pb.HashRespon
 	p := s.params.Load().(*params)
 
 	hash := argon2.IDKey(
-		[]byte(req.GetPassword()),
-		append(salt, req.GetPepper()...),
+		[]byte(req.Password),
+		append(salt, req.Pepper...),
 		p.time, p.memory, p.threads, tagLen)
 
 	res := make([]byte, 0, maxParamsLength+len(salt)+len(hash))
@@ -111,7 +111,7 @@ func (s pbServer) Hash(ctx context.Context, req *pb.HashRequest) (*pb.HashRespon
 }
 
 func (s pbServer) Verify(ctx context.Context, req *pb.VerifyRequest) (*pb.VerifyResponse, error) {
-	time, memory, threads, hash := consumeParams(req.GetHash())
+	time, memory, threads, hash := consumeParams(req.Hash)
 	if len(hash) != saltLen+tagLen {
 		return nil, status.Error(codes.InvalidArgument, "invalid hash")
 	}
@@ -123,8 +123,8 @@ func (s pbServer) Verify(ctx context.Context, req *pb.VerifyRequest) (*pb.Verify
 	salt, hash := hash[:saltLen:saltLen], hash[saltLen:]
 
 	expect := argon2.IDKey(
-		[]byte(req.GetPassword()),
-		append(salt, req.GetPepper()...),
+		[]byte(req.Password),
+		append(salt, req.Pepper...),
 		time, memory, threads, tagLen)
 
 	valid := subtle.ConstantTimeCompare(expect, hash) == 1
