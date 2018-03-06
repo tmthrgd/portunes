@@ -47,7 +47,7 @@ func (c *Client) Hash(ctx context.Context, password string, pepper []byte, opts 
 		return nil, err
 	}
 
-	return resp.GetHash(), nil
+	return resp.Hash, nil
 }
 
 // Verify determines whether the given password and pepper
@@ -69,7 +69,7 @@ func (c *Client) Verify(ctx context.Context, password string, pepper, hash []byt
 		return false, false, err
 	}
 
-	return resp.GetValid(), resp.GetRehash(), nil
+	return resp.Valid, resp.Rehash, nil
 }
 
 // disableCompression does what it says on the tin. It's
