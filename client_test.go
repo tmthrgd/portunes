@@ -26,7 +26,10 @@ func testingClient(sopt ...ServerOption) (c *Client, s *Server, stop func()) {
 	s = NewServer(1, 64*1024, 2, sopt...)
 	s.Attach(srv)
 
+	done := make(chan struct{})
 	go func() {
+		defer close(done)
+
 		if err := srv.Serve(ln); err != nil && err != grpc.ErrServerStopped {
 			panic(err)
 		}
@@ -46,6 +49,7 @@ func testingClient(sopt ...ServerOption) (c *Client, s *Server, stop func()) {
 		cc.Close()
 		srv.Stop()
 		ln.Close()
+		<-done
 	}
 }
 
