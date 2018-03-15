@@ -13,7 +13,7 @@ func appendVarint32(buf []byte, v uint32) []byte {
 
 func consumeVarint32(buf []byte) (uint32, []byte, bool) {
 	tmp, n := binary.Uvarint(buf)
-	if n <= 0 || tmp>>32 != 0 {
+	if n <= 0 || uint64(uint32(tmp)) != tmp {
 		return 0, nil, false
 	}
 
