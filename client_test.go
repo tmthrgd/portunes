@@ -272,14 +272,14 @@ func TestRehash(t *testing.T) {
 
 	t.Logf("%d:%02x", len(hash), hash)
 
-	rehashFn := func(rehash bool) func(uint32, uint32, uint8) bool {
-		return func(uint32, uint32, uint8) bool {
+	rehashFn := func(rehash bool) func(context.Context, uint32, uint32, uint8) bool {
+		return func(context.Context, uint32, uint32, uint8) bool {
 			return rehash
 		}
 	}
 
 	for _, tc := range []struct {
-		fn     func(uint32, uint32, uint8) bool
+		fn     func(context.Context, uint32, uint32, uint8) bool
 		rehash bool
 	}{
 		{nil, false},
@@ -330,14 +330,14 @@ func TestDOSProtection(t *testing.T) {
 
 	t.Logf("%d:%02x", len(hash), hash)
 
-	dosProtFn := func(allow bool) func(uint32, uint32, uint8) bool {
-		return func(uint32, uint32, uint8) bool {
+	dosProtFn := func(allow bool) func(context.Context, uint32, uint32, uint8) bool {
+		return func(context.Context, uint32, uint32, uint8) bool {
 			return allow
 		}
 	}
 
 	for _, tc := range []struct {
-		fn    func(uint32, uint32, uint8) bool
+		fn    func(context.Context, uint32, uint32, uint8) bool
 		allow bool
 	}{
 		{nil, true},

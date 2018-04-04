@@ -27,7 +27,7 @@ type params struct {
 type Server struct {
 	params atomic.Value // *params
 
-	rehash, dosProt func(time, memory uint32, threads uint8) bool
+	rehash, dosProt func(ctx context.Context, time, memory uint32, threads uint8) bool
 }
 
 // NewServer creates a Server with the given paramaters.
@@ -74,7 +74,7 @@ func (s *Server) SetParameters(time, memory uint32, threads uint8) {
 	s.params.Store(&params{time, memory, threads})
 }
 
-func (s *Server) defaultRehash(time, memory uint32, threads uint8) bool {
+func (s *Server) defaultRehash(ctx context.Context, time, memory uint32, threads uint8) bool {
 	p := s.params.Load().(*params)
 	return memory < p.memory
 }
@@ -116,7 +116,7 @@ func (s pbServer) Verify(ctx context.Context, req *pb.VerifyRequest) (*pb.Verify
 		return nil, status.Error(codes.InvalidArgument, "invalid hash")
 	}
 
-	if s.dosProt != nil && !s.dosProt(time, memory, threads) {
+	if s.dosProt != nil && !s.dosProt(ctx, time, memory, threads) {
 		return nil, status.Error(codes.ResourceExhausted, "dos protection callback refused")
 	}
 
@@ -132,7 +132,7 @@ func (s pbServer) Verify(ctx context.Context, req *pb.VerifyRequest) (*pb.Verify
 	return &pb.VerifyResponse{
 		Valid: valid,
 		Rehash: s.rehash != nil &&
-			s.rehash(time, memory, threads),
+			s.rehash(ctx, time, memory, threads),
 	}, nil
 }
 
@@ -145,7 +145,7 @@ type ServerOption func(*Server)
 //
 // By default, rehash will be true if the memory usage has
 // increased.
-func WithRehashFunc(fn func(time, memory uint32, threads uint8) bool) ServerOption {
+func WithRehashFunc(fn func(ctx context.Context, time, memory uint32, threads uint8) bool) ServerOption {
 	return func(s *Server) {
 		s.rehash = fn
 	}
@@ -157,7 +157,7 @@ func WithRehashFunc(fn func(time, memory uint32, threads uint8) bool) ServerOpti
 //
 // The callback should return false to reject the the hash.
 // By default all password verification will be accepted.
-func WithDOSProtectionFunc(fn func(time, memory uint32, threads uint8) bool) ServerOption {
+func WithDOSProtectionFunc(fn func(ctx context.Context, time, memory uint32, threads uint8) bool) ServerOption {
 	return func(s *Server) {
 		s.dosProt = fn
 	}
