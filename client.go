@@ -69,7 +69,14 @@ func (c *Client) Verify(ctx context.Context, password string, pepper, hash []byt
 		return false, false, err
 	}
 
-	return resp.Valid, resp.Rehash, nil
+	// Never return true for rehash if the password was
+	// invalid so that a caller that doesn't first
+	// check valid won't allow an invalid password to
+	// be rehashed over a valid one.
+	//
+	// This is done on both the server and client to
+	// ensure that this condition is always maintained.
+	return resp.Valid, resp.Rehash && resp.Valid, nil
 }
 
 // disableCompression does what it says on the tin. It's

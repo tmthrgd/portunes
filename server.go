@@ -129,10 +129,23 @@ func (s pbServer) Verify(ctx context.Context, req *pb.VerifyRequest) (*pb.Verify
 
 	valid := subtle.ConstantTimeCompare(expect, hash) == 1
 
+	// Always call s.rehash regardless of password
+	// validity to limit a potential side-channel leak.
+	rehash := s.rehash != nil && s.rehash(ctx, time, memory, threads)
+
 	return &pb.VerifyResponse{
 		Valid: valid,
-		Rehash: s.rehash != nil &&
-			s.rehash(ctx, time, memory, threads),
+
+		// Never return true for rehash if the
+		// password was invalid so that a client
+		// that doesn't first check valid won't
+		// allow an invalid password to be rehashed
+		// over a valid one.
+		//
+		// This is done on both the server and
+		// client to ensure that this condition is
+		// always maintained.
+		Rehash: rehash && valid,
 	}, nil
 }
 

@@ -319,6 +319,27 @@ func TestDefaultRehash(t *testing.T) {
 	assert.True(t, rehash, "rehash")
 }
 
+func TestRehashInvalid(t *testing.T) {
+	t.Parallel()
+
+	c, _, stop := testingClient(
+		WithRehashFunc(func(context.Context, uint32, uint32, uint8) bool {
+			return true
+		}))
+	defer stop()
+
+	hash, err := c.Hash(context.Background(), "password🔐🔓", []byte("🔑📋"))
+	require.NoError(t, err)
+
+	t.Logf("%d:%02x", len(hash), hash)
+
+	valid, rehash, err := c.Verify(context.Background(), "wrong🔑📋", []byte("🔑📋"), hash)
+	require.NoError(t, err)
+
+	assert.False(t, valid, "valid")
+	assert.False(t, rehash, "rehash")
+}
+
 func TestDOSProtection(t *testing.T) {
 	t.Parallel()
 
