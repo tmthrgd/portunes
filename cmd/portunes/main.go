@@ -7,8 +7,8 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/tmthrgd/portunes"
 	"google.golang.org/grpc"
+	"tmthrgd.dev/go/portunes"
 )
 
 func main() {

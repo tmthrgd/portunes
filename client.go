@@ -3,9 +3,9 @@ package portunes
 import (
 	"context"
 
-	pb "github.com/tmthrgd/portunes/internal/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/encoding"
+	pb "tmthrgd.dev/go/portunes/internal/proto"
 )
 
 // Client wraps a grpc.ClientConn for use with the

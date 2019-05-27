@@ -6,11 +6,11 @@ import (
 	"crypto/subtle"
 	"sync/atomic"
 
-	pb "github.com/tmthrgd/portunes/internal/proto"
 	"golang.org/x/crypto/argon2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	pb "tmthrgd.dev/go/portunes/internal/proto"
 )
 
 const (
