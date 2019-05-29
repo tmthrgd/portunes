@@ -1,4 +1,4 @@
-module tmthrgd.dev/go/portunes
+module go.tmthrgd.dev/portunes
 
 go 1.12
 
