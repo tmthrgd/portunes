@@ -3,8 +3,6 @@ syntax = "proto3";
 package portunes;
 option go_package = "proto";
 
-option optimize_for = SPEED;
-
 service Hasher {
 	rpc Hash(HashRequest) returns (HashResponse) {}
 	rpc Verify(VerifyRequest) returns (VerifyResponse) {}
