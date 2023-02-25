@@ -6,7 +6,7 @@ require (
 	github.com/golang/protobuf v1.3.1
 	github.com/hydrogen18/memlistener v0.0.0-20141126152155-54553eb933fb
 	github.com/stretchr/testify v1.3.0
-	golang.org/x/crypto v0.0.0-20190513172903-22d7a77e9e5f
-	golang.org/x/net v0.0.0-20190522155817-f3200d17e092
+	golang.org/x/crypto v0.1.0
+	golang.org/x/net v0.1.0
 	google.golang.org/grpc v1.21.0
 )
